@@ -8,10 +8,16 @@ import {
   useTrackVolume,
   useVoiceAssistant,
 } from '@livekit/components-react';
+import { ConnectionState } from 'livekit-client';
 import { Github, Globe, Linkedin, Loader2, Mic, Square, Volume2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { SignOutButton } from '@/components/app/auth-gate';
 import { cn } from '@/lib/shadcn/utils';
 
 export function DeutschMateView() {
+  const { data: authSession } = useSession();
+  const learnerFirstName = authSession?.user?.name?.split(' ')[0] ?? 'Learner';
+
   const session = useSessionContext();
   const { state: agentState } = useAgent();
   const { messages } = useSessionMessages(session);
@@ -37,7 +43,9 @@ export function DeutschMateView() {
 
   // Determine actual agent state from LiveKit
   const isConnecting =
-    session.isConnecting || agentState === 'connecting' || agentState === 'initializing';
+    session.connectionState === ConnectionState.Connecting ||
+    agentState === 'connecting' ||
+    agentState === 'initializing';
   const isConnected = session.isConnected;
   const isListening = isConnected && agentState === 'listening';
   const isThinking = isConnected && agentState === 'thinking';
@@ -139,6 +147,7 @@ export function DeutschMateView() {
               <span className="bg-white size-2 rounded-full animate-pulse" />
               <span>AI Tutor</span>
             </div>
+            <SignOutButton />
           </div>
         </div>
       </nav>
@@ -173,7 +182,7 @@ export function DeutschMateView() {
             className="text-white/95 text-base font-semibold md:text-lg tracking-tight"
             style={{ textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)' }}
           >
-            Hallo, Ritesh.
+            Hallo, {learnerFirstName}.
           </p>
           <p
             className="text-white/75 text-xs md:text-sm font-normal mt-0.5"
