@@ -26,8 +26,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, account, profile }) {
       if (account && profile) {
         // `profile.sub` is the stable Google user ID
-        token.googleId = profile.sub as string;
+        token.googleId = (profile.sub as string) || (account.providerAccountId as string);
         token.name = profile.name as string;
+        token.email = profile.email as string;
         token.picture = (profile as { picture?: string }).picture ?? '';
       }
       if (!token.googleId && token.sub) {
@@ -51,3 +52,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
+

@@ -1,278 +1,332 @@
-# Voice Agent Starter — Powered by Murf Falcon
+# DeutschMate 🇩🇪
 
-Build a production voice AI agent in 5 minutes. Powered by the fastest TTS on the market - swap the system prompt to build anything from customer support to language tutors.
+> *"Language is learned in conversation."*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Murf Falcon](https://img.shields.io/badge/TTS-Murf%20Falcon-6366F1)](https://murf.ai/api/docs/text-to-speech/streaming) [![LiveKit](https://img.shields.io/badge/Transport-LiveKit-002cf2)](https://docs.livekit.io) [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-
----
-
-## Why Murf Falcon
-
-- **55ms model latency** - fastest production TTS
-- **130ms time-to-first-audio** across 10+ global regions
-- **$0.01/1000 characters** - up to 10x cheaper than alternatives
-- **150+ voices** across 35+ languages
-- **99.38% pronunciation accuracy**
+**DeutschMate** is a real-time multilingual AI voice tutor designed to help learners practice German through natural, interactive voice conversations. Built for the **VoiceForBharat** challenge (*10 Days of Voice Agents*), DeutschMate combines low-latency real-time speech processing, persistent learner memory, and dynamic language-learning exercise retrieval into an intuitive, accessible voice experience.
 
 ---
 
-## Architecture
+## 🌟 Key Features
 
-```mermaid
-flowchart LR
-    A[🎙️ User speaks] -->|audio| B[Deepgram STT]
-    B -->|text| C[LLM]
-    C -->|response text| D[Murf Falcon TTS]
-    D -->|audio| E[LiveKit]
-    E -->|stream| F[🔊 User hears]
+### 1. 🎙️ Real-Time Multilingual Voice Conversations
+- **Live Voice Interaction**: Seamless bidirectional streaming via LiveKit Agents with ultra-fast speech synthesis.
+- **Dynamic Multilingual Code-Switching**: Speaks and responds fluently in **German**, **English**, **Hindi**, and **Hinglish**, matching the learner's spoken language.
+- **Native Script Fidelity**: Generates Devanagari script for Hindi responses and handles native German diacritics (`ä`, `ö`, `ü`, `ß`).
 
-    style A fill:#444441,stroke:#888780,color:#fff
-    style B fill:#185FA5,stroke:#85B7EB,color:#fff
-    style C fill:#534AB7,stroke:#AFA9EC,color:#fff
-    style D fill:#0F6E56,stroke:#5DCAA5,color:#fff
-    style E fill:#D85A30,stroke:#F0997B,color:#fff
-    style F fill:#444441,stroke:#888780,color:#fff
+### 2. 🧠 Persistent Learner Memory
+- **Stable OAuth Identity**: Uses authenticated **Google Account (`sub` ID)** as the unique learner identifier, ensuring different accounts with identical display names maintain separate memory profiles.
+- **PostgreSQL Context Store**: Remembers learner levels (A1–B2), primary goals, topics covered, and recurring grammar/pronunciation mistakes across sessions.
+- **Privacy & Consent Gate**: Explicitly requests user consent before persisting memory records, storing only relevant learning insights—never raw conversation audio or transcripts.
+
+### 3. 📚 Dynamic German Practice & Tool Integration
+- **`get_german_practice()` Function Tool**: Autonomously triggered when a learner asks for quizzes, vocabulary drills, grammar tasks, or translation challenges.
+- **Memory-Driven Retrieval**: Uses stored learner memory to fill in missing level or topic preferences automatically.
+- **Answer Protection**: Delivers exercise questions first and withholds answers until the learner attempts the response or requests help.
+
+### 4. ⚡ Resilient Learning Data Engine
+- **Primary Source (External API)**: Connects to the [German Language Learning API](https://german-language.onrender.com) for real-time vocabulary, grammar rules, and sentence translation practice.
+- **Local Fallback Dataset**: If the external API times out or is unavailable, the agent seamlessly switches to a hand-curated offline dataset (`backend/data/german_exercises.json`) containing 75 level-structured exercises across CEFR levels A1, A2, B1, and B2.
+
+### 5. 🎨 Modern Liquid-Glass Frontend
+- **Real-Time Visual Agent States**: Clear state indication across 5 phases: `Ready`, `Connecting`, `Listening`, `Speaking`, and `Call Ended`.
+- **User Experience**: Smooth visualizer animations, intuitive microphone permission handling, one-click reconnection, and Google Sign-In identity integration.
+
+---
+
+## 🏗️ Architecture
+
+```
+                                    +-----------------------+
+                                    |    Learner (User)     |
+                                    +-----------+-----------+
+                                                |
+                                        (Audio / WebRTC)
+                                                v
+                                  +---------------------------+
+                                  |   DeutschMate Frontend    |
+                                  |   (Next.js + NextAuth)    |
+                                  +-------------+-------------+
+                                                |
+                                                v
+                                    +-----------------------+
+                                    |    LiveKit Server     |
+                                    |  (Real-time Transport)|
+                                    +-----------+-----------+
+                                                |
+                                                v
+                               +---------------------------------+
+                               |   Python Voice Agent Engine     |
+                               | (src/agent.py + src/memory.py)  |
+                               +----------------+----------------+
+                                                |
+        +-------------------+-------------------+-------------------+-------------------+
+        |                   |                   |                   |                   |
+        v                   v                   v                   v                   v
++---------------+   +---------------+   +---------------+   +---------------+   +---------------+
+| Deepgram      |   | Google Gemini |   | Murf Falcon   |   | PostgreSQL    |   | German        |
+| Nova-3        |   | 3.5 Flash-Lite|   | TTS           |   | Database      |   | Practice Tool |
+| (Speech-to-   |   | (Language &   |   | (Voice        |   | (Learner      |   | (Learning     |
+| Text)         |   | Reasoning)    |   | Synthesis)    |   | Memory)       |   | Data Engine)  |
++---------------+   +---------------+   +---------------+   +---------------+   +-------+-------+
+                                                                                        |
+                                                                        +---------------+---------------+
+                                                                        |                               |
+                                                                        v                               v
+                                                              +-------------------+           +-------------------+
+                                                              | External German   |           | Local JSON        |
+                                                              | Learning API      |  (fail)   | Fallback Dataset  |
+                                                              | (onrender.com)    +---------->| (75 Curated       |
+                                                              | (Primary)         |           | Exercises)        |
+                                                              +-------------------+           +-------------------+
+```
+
+### Typical Interaction Flow
+1. **Connection & Identity**: The learner signs in via Google OAuth. The Next.js frontend passes the authenticated `sub` ID as metadata over LiveKit.
+2. **Memory Ingestion**: The agent queries PostgreSQL for existing learner records (level, mistakes, topics) and injects this context into the active session.
+3. **Voice Processing**: User audio is streamed via WebRTC to LiveKit, converted to text via Deepgram Nova-3, and processed by Google Gemini 3.5 Flash-Lite.
+4. **Tool Execution**: When an exercise is requested, `get_german_practice()` calls the external API (or local JSON fallback if offline) and presents the question.
+5. **Speech Response**: The response text is synthesized into natural audio using Murf Falcon TTS (Voice: *Anisha*) and streamed back to the learner.
+
+---
+
+## 🔄 Exercise Retrieval Fallback Logic
+
+```
+ Learner requests practice exercise
+                │
+                ▼
+      get_german_practice()
+                │
+                ▼
+   Attempt External German API
+ (https://german-language.onrender.com)
+                │
+        ┌───────┴───────┐
+        │               │
+  [ API Success ]  [ API Fail / Timeout ]
+        │               │
+        ▼               ▼
+  Return API      Read Hand-Curated
+   Exercise        Local JSON File
+                        │
+                ┌───────┴───────┐
+                │               │
+          [ JSON Success ]  [ Read Error ]
+                │               │
+                ▼               ▼
+          Return Local    Return Graceful
+            Exercise       Error Message
 ```
 
 ---
 
-## Quickstart
+## 🛠️ Tech Stack
+
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS | Liquid-glass user interface & auth flow |
+| **Backend Agent** | Python 3.10+, `livekit-agents` SDK | Async agent orchestration & tool calls |
+| **Transport** | LiveKit WebRTC Server | Sub-second real-time audio streaming |
+| **Speech-to-Text (STT)** | Deepgram Nova-3 | Multilingual speech transcription |
+| **Language Model (LLM)** | Google Gemini 3.5 Flash-Lite | Context reasoning, tutoring logic & tool execution |
+| **Text-to-Speech (TTS)** | Murf Falcon (`Anisha` voice profile) | Ultra-low latency voice synthesis |
+| **Database** | PostgreSQL | Persistent learner memory and profile storage |
+| **Authentication** | Google OAuth 2.0 (NextAuth.js) | Stable user identity management |
+| **External API** | German Language Learning API | Online exercises, grammar rules, & vocabulary |
+| **Fallback Data** | Curated JSON (`german_exercises.json`) | Reliable offline exercise dataset (75 exercises) |
+| **Package Managers** | `uv` (Python), `pnpm` (Node.js) | High-performance dependency management |
+
+---
+
+## 🚀 10 Days of Voice Agents — Progress
+
+- [x] **Day 1 — First Conversation**: Implemented the core real-time voice pipeline using LiveKit Agents, Deepgram STT, Gemini LLM, and Murf Falcon TTS.
+- [x] **Day 2 — Improving the Voice Experience**: Optimized turn-taking, prompt instructions, and audio streaming parameters to minimize latency.
+- [x] **Day 3 — Building the DeutschMate Frontend**: Designed a liquid-glass UI with 5 agent states (`Ready`, `Connecting`, `Listening`, `Speaking`, `Call ended`), microphone controls, and custom branding.
+- [x] **Day 4 — Giving DeutschMate Memory**: Integrated PostgreSQL and Google OAuth to establish stable `sub`-based learner profiles, supporting consent-gated memory storage across sessions.
+- [x] **Day 5 — Giving DeutschMate Access to Learning Data**: Built the `get_german_practice()` tool with primary external API fetching, level/topic matching, and an expanded 75-exercise local JSON fallback engine.
+
+---
+
+## 📊 Day 5 Data Source Disclosure
+
+In compliance with challenge transparency requirements, DeutschMate utilizes a multi-tiered data retrieval strategy for German language exercises:
+
+1. **Primary Source — External API**:
+   - **Service**: [German Language Learning API](https://german-language.onrender.com)
+   - **Capabilities**: Dynamically queries vocabulary (`/vocab`), grammar rules (`/grammar`), and sentence translations (`/sentences/random`).
+   - **Security**: Authenticated via `GERMAN_API_KEY` header.
+
+2. **Fallback Source — Local Curated Dataset**:
+   - **Path**: `backend/data/german_exercises.json`
+   - **Details**: A hand-curated dataset containing **75 exercises** categorized by CEFR levels (**30 A1, 20 A2, 15 B1, 10 B2**) covering 15 diverse topics (travel, work, grammar, daily life, directions, etc.).
+   - **Usage**: Automatically engaged if the external API is unreachable, rate-limited, or returns a network error, ensuring uninterrupted learning sessions without extra LLM overhead.
+
+---
+
+## 📁 Project Structure
+
+```
+murf-voice-agent/
+├── backend/                        # Python Voice Agent Application
+│   ├── data/
+│   │   └── german_exercises.json   # Hand-curated local fallback dataset (75 exercises)
+│   ├── src/
+│   │   ├── agent.py                # Main agent logic, system prompt & tool handlers
+│   │   ├── memory.py               # Learner memory module & PostgreSQL CRUD operations
+│   │   ├── db.py                   # PostgreSQL connection pool manager
+│   │   └── migrate.py              # Database schema migration script
+│   ├── tests/
+│   │   └── test_practice.py        # Integration tests for external API & fallback logic
+│   ├── .env.example                # Backend environment variable template
+│   ├── pyproject.toml              # Python project configuration (uv)
+│   └── Dockerfile                  # Container deployment configuration
+├── frontend/                       # Next.js Frontend Application
+│   ├── app/
+│   │   ├── api/                    # NextAuth & LiveKit token API routes
+│   │   ├── layout.tsx              # Root layout & providers
+│   │   └── page.tsx                # Main voice agent interface
+│   ├── components/                 # UI components (Agent status, visualizer, auth buttons)
+│   ├── auth.ts                     # NextAuth configuration & Google OAuth sub handler
+│   ├── app-config.ts               # Application metadata & branding config
+│   ├── .env.example                # Frontend environment variable template
+│   └── package.json                # Node.js dependencies (pnpm)
+├── start_app.ps1                   # Windows startup script
+├── start_app.sh                    # Linux/macOS startup script
+└── README.md                       # Project documentation
+```
+
+---
+
+## 🔒 Memory & Privacy
+
+- **Explicit Consent**: DeutschMate requires explicit user consent before storing any memory records.
+- **Focused Data Collection**: Only learning metadata (CEFR level, target goals, weak topics, common mistakes) is stored.
+- **No Audio/Transcript Logging**: Full raw audio streams and transcript histories are never persisted in the database.
+- **Account Isolation**: Learner profiles are indexed strictly by authenticated Google OAuth `sub` identifiers. Different accounts sharing the same display name remain completely isolated.
+
+---
+
+## ⚙️ Environment Variables
+
+### Backend (`backend/.env.local`)
+```env
+# LiveKit Transport
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+
+# Speech & Voice AI
+MURF_API_KEY=your_murf_api_key
+DEEPGRAM_API_KEY=your_deepgram_api_key
+GOOGLE_API_KEY=your_google_ai_studio_key
+
+# PostgreSQL Memory Store
+DATABASE_URL=postgresql://postgres:password@localhost:5432/deutschmate
+
+# German Learning API Key
+GERMAN_API_KEY=demo-key-12345
+```
+
+### Frontend (`frontend/.env.local`)
+```env
+# LiveKit Config (Must match backend project)
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+
+# Google OAuth Credentials
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# NextAuth Session Secret
+AUTH_SECRET=your_generated_32_byte_secret
+```
+
+---
+
+## 🚀 Setup & Running Locally
 
 ### Prerequisites
+- **Python**: 3.10 or higher
+- **uv**: Fast Python package manager (`pip install uv` or `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`)
+- **Node.js**: v18+ & **pnpm**: (`npm install -g pnpm`)
+- **PostgreSQL**: Local server or cloud instance (e.g. Neon / Supabase)
+- **LiveKit Server**: Executable or LiveKit Cloud account
 
-- **Python** 3.10+
-- **[uv](https://docs.astral.sh/uv/)** - fast Python package manager
-  ```bash
-  # macOS/Linux
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  # Windows (PowerShell)
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  ```
-- **Node.js** 18+
-- **pnpm** — fast Node package manager
-  ```bash
-  npm install -g pnpm
-  ```
-- A [LiveKit](https://cloud.livekit.io/) project (free tier available)
-
-### Step 1: Clone the repo
+### Step 1: Install Dependencies
 
 ```bash
-git clone https://github.com/murf-ai/murf-livekit-starter.git
-cd murf-livekit-starter
-```
-
-### Step 2: Set up environment variables
-
-Create `.env.local` in both `backend/` and `frontend/` (copy from `.env.example` in each). You need:
-
-| Variable                               | Where to get it                                        | Required |
-| -------------------------------------- | ------------------------------------------------------ | -------- |
-| `LIVEKIT_URL`                          | LiveKit Cloud dashboard                                | Yes      |
-| `LIVEKIT_API_KEY`                      | LiveKit Cloud dashboard                                | Yes      |
-| `LIVEKIT_API_SECRET`                   | LiveKit Cloud dashboard                                | Yes      |
-| `MURF_API_KEY`                         | [murf.ai/api/dashboard](https://murf.ai/api/dashboard) | Yes      |
-| `DEEPGRAM_API_KEY`                     | [deepgram.com](https://deepgram.com)                   | Yes      |
-| `GOOGLE_API_KEY` (or `OPENAI_API_KEY`) | Depends on LLM choice                                  | Yes      |
-
-### Step 3: Install backend dependencies
-
-```bash
+# Install backend dependencies
 cd backend
 uv sync
-uv run python src/agent.py download-files
-```
 
-### Step 4: Install frontend dependencies
-
-```bash
-cd frontend
+# Install frontend dependencies
+cd ../frontend
 pnpm install
 ```
 
-### Step 5: Run it
-
-**Option A - All-in-one (from repo root):**
-
-```bash
-# macOS/Linux
-chmod +x start_app.sh
-./start_app.sh
-
-# Windows (PowerShell)
-.\start_app.ps1
-```
-
-**Option B - Separate terminals:**
+### Step 2: Initialize Database
+Ensure PostgreSQL is running, then run the database migration:
 
 ```bash
-# Terminal 1 — LiveKit Server
-livekit-server --dev
-
-# Terminal 2 — Backend agent
-cd backend && uv run python src/agent.py dev
-
-# Terminal 3 — Frontend
-cd frontend && pnpm dev
+cd backend
+uv run python src/migrate.py
 ```
 
-Then open **http://localhost:3000** in your browser.
+### Step 3: Run the Application
 
-You should now see the voice agent UI. Click **Start talking**, allow microphone access, and speak — the agent will respond with Murf Falcon TTS. Ensure your backend and (if using Option B) LiveKit server are running.
+Run the following services in **three separate terminals**:
+
+#### Terminal 1 — LiveKit Server (Local Dev)
+```powershell
+.\livekit-server.exe --dev
+```
+*(Note: `livekit-server.exe` is a local development binary and is excluded from version control).*
+
+#### Terminal 2 — Backend Voice Agent
+```powershell
+cd backend
+uv run python src/agent.py dev
+```
+
+#### Terminal 3 — Next.js Frontend
+```powershell
+cd frontend
+pnpm dev
+```
+
+Open **http://localhost:3000** in your browser, sign in with Google, and click **Start Talking** to begin practicing German!
 
 ---
 
-## Deploy
+## 🧪 Testing & Verification
 
-Want to deploy this beyond localhost? You'll need to deploy **two services**: the backend agent and the frontend. Both must use the same LiveKit project.
+### Automated Backend Test
+Run the test suite to verify the German practice tool, external API connectivity, and local JSON fallback:
 
-> This is a two-service app — the backend agent and the frontend UI deploy separately. You'll need both running and connected to the same LiveKit project.
+```bash
+cd backend
+uv run python tests/test_practice.py
+```
 
-### Backend (Python agent) — Deploy to Railway
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/tIVCF1?referralCode=cNjn2P&utm_medium=integration&utm_source=template&utm_campaign=generic)
-
-Set these environment variables in Railway:
-
-- `MURF_API_KEY`
-- `DEEPGRAM_API_KEY`
-- `GOOGLE_API_KEY` or `OPENAI_API_KEY`
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-
-The backend runs as a long-lived Python process that connects to LiveKit as an agent. Railway handles this well.
-
-### Frontend (Next.js) — Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/murf-ai/murf-livekit-starter&root-directory=frontend&env=LIVEKIT_URL,LIVEKIT_API_KEY,LIVEKIT_API_SECRET&project-name=murf-voice-agent&repository-name=murf-voice-agent)
-
-Set these environment variables in Vercel:
-
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-- `AGENT_NAME` (optional — for explicit agent dispatch)
-
-The frontend is a standard Next.js app. Point it at the same LiveKit instance your backend agent is connected to.
-
-### Connecting them
-
-The frontend and backend don't call each other directly — they both connect to **LiveKit**, which handles the real-time audio transport.
-
-1. Use the **same** `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` on both Railway and Vercel
-2. Set `AGENT_NAME=my-agent` on Vercel — this matches the `agent_name="my-agent"` registered in `backend/src/agent.py`
-3. Verify: Railway logs should show the agent connected to LiveKit. Open your Vercel URL, click **Start talking** — the agent should respond
-
-If the agent doesn't connect, double-check that both services point to the same LiveKit project and that the backend is running (check Railway logs).
+### Manual Verification Checklist
+- [x] **Google Authentication**: Sign in and verify your Google profile email/picture appear in the UI.
+- [x] **Voice Pipeline**: Connect to the agent and confirm audio response playback via Murf Falcon.
+- [x] **Multilingual Code-Switching**: Speak in Hindi/Hinglish to verify Devanagari Hindi responses, and speak in German to verify correct diacritic usage (`ä`, `ö`, `ü`, `ß`).
+- [x] **Practice Tool Execution**: Ask *"Give me a German exercise"* and confirm `get_german_practice()` fetches a question without revealing the answer upfront.
+- [x] **Memory Persistence**: Ask the agent to save your level (e.g., *"Set my German level to A2"*), end the call, sign in again, and verify the agent recalls your level.
 
 ---
 
-## Change the Use Case
+## 🙌 Built on the Murf AI Starter
 
-The default system prompt makes this a **customer support agent**. You can change the agent’s behavior by editing the prompt.
+DeutschMate was developed starting from the open-source **[Murf AI LiveKit Voice Agent Starter](https://github.com/murf-ai/murf-livekit-starter)**. 
 
-**Where the prompt lives:** `backend/src/agent.py`- the `SYSTEM_PROMPT` constant (near the top of the file, after the imports). Change that string to change what your voice agent does.
-
-### Example prompts (copy-paste)
-
-**Customer Support (default):**
-
-```
-You are a friendly and efficient customer support agent for a tech company. Help users with account issues, billing questions, and product troubleshooting. Be concise, empathetic, and solution-oriented. If you don't know something, say so honestly and offer to escalate.
-```
-
-**Language Tutor:**
-
-```
-You are a patient and encouraging language tutor helping the user practice conversational Spanish. Speak primarily in Spanish but switch to English to explain grammar or vocabulary when needed. Correct mistakes gently and suggest better phrasing. Keep conversations natural and fun.
-```
-
-**AI Receptionist:**
-
-```
-You are a professional receptionist for a medical clinic. Help callers schedule appointments, answer questions about office hours and services, and take messages for doctors. Be warm but efficient. Ask for the caller's name and reason for calling upfront.
-```
-
-See the Configuration section below for voice, STT, and LLM options.
+Special thanks to **Murf AI** and **LiveKit** for providing the high-speed text-to-speech engine and real-time audio transport foundation that made DeutschMate possible during the **VoiceForBharat** challenge!
 
 ---
 
-## Configuration
+## 📄 License
 
-### Murf voice
-
-Edit the `tts=murf.TTS(...)` call in `backend/src/agent.py`. Set the `voice` argument to any Murf voice ID. Examples:
-
-- `Anisha` — Indian English (female, default in this starter)
-- `Pooja` — Indian English (female)
-- `Samar` — Indian English (male)
-- `Amara` — US English (female)
-- `Gordon` — US English (male)
-- `Hazel` — UK English (female)
-- `Bertie` — UK English (male)
-
-Browse all voices: [Murf Voice Library](https://murf.ai/api/docs/voices-styles/voice-library).
-
-### STT provider
-
-STT is configured in `backend/src/agent.py` in the `AgentSession(stt=...)` call. The default is Deepgram (`deepgram.STT(model="nova-3")`). You can swap to another LiveKit-compatible STT plugin if needed.
-
-### LLM (Gemini vs OpenAI)
-
-- **Gemini (default):** Set `GOOGLE_API_KEY` and use `llm=google.LLM(model="gemini-3.5-flash-lite")` in `agent.py`.
-- **OpenAI:** Set `OPENAI_API_KEY`, add the OpenAI plugin, and use the corresponding `llm=openai.LLM(...)` in `agent.py`.
-
-### Audio format
-
-Murf Falcon and LiveKit handle audio format internally. For advanced options, see [Murf API docs](https://murf.ai/api/docs) and [LiveKit docs](https://docs.livekit.io).
-
----
-
-## Project Structure
-
-```
-murf-livekit-starter/
-├── backend/                 # Python voice agent (LiveKit Agents + Murf Falcon)
-│   ├── src/
-│   │   └── agent.py         # Agent entrypoint, pipeline (STT/LLM/TTS), system prompt
-│   ├── tests/               # Agent tests
-│   ├── .env.example         # Backend env template
-│   ├── pyproject.toml       # Python deps (uv)
-│   └── railway.toml         # Railway deploy config
-├── frontend/                # Next.js UI for voice sessions
-│   ├── app/
-│   │   ├── page.tsx         # Main page
-│   │   └── api/token/       # LiveKit token endpoint (dev)
-│   ├── components/          # UI (agents-ui, app config, theme)
-│   ├── app-config.ts        # Branding, title, button text, accent
-│   ├── .env.example         # Frontend env template
-│   └── package.json         # Node deps (pnpm)
-├── start_app.sh             # Start LiveKit + backend + frontend (macOS/Linux)
-├── start_app.ps1            # Start LiveKit + backend + frontend (Windows)
-├── README.md                # This file
-```
-
-For deeper documentation on each part, see:
-
-- [Backend Documentation](./backend/README.md) — agent pipeline, voice/LLM/STT configuration, testing, deployment
-- [Frontend Documentation](./frontend/README.md) — UI customization, visualizers, theming, component architecture
-
----
-
-## Links
-
-- [Murf API Docs](https://murf.ai/api/docs)
-- [Murf Voice Library](https://murf.ai/api/docs/voices-styles/voice-library)
-- [LiveKit Docs](https://docs.livekit.io)
-- [Deepgram Docs](https://developers.deepgram.com)
-- [Murf Falcon Benchmarks](https://murf.ai/falcon/benchmarks)
-- [TTS Latency Benchmarker](https://github.com/sahilsgupta/tts-latency-benchmarker) — run your own p50/p95 tests across providers
-- [Murf Discord](https://discord.gg/FbKAy96Sz7)
-- [Murf Startup Incubator](https://murf.ai/api) — 50M free characters for startups
-
----
-
-## License
-
-MIT
+This project is licensed under the [MIT License](LICENSE).

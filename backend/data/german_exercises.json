@@ -1,0 +1,602 @@
+[
+  {
+    "id": 1,
+    "level": "beginner",
+    "topic": "introductions",
+    "type": "speaking",
+    "question": "How do you say 'Hello, my name is...' in German?",
+    "answer": "Hallo, mein Name ist..."
+  },
+  {
+    "id": 2,
+    "level": "beginner",
+    "topic": "travel",
+    "type": "translation",
+    "question": "How do you say 'Where is the train station?' in German?",
+    "answer": "Wo ist der Bahnhof?"
+  },
+  {
+    "id": 3,
+    "level": "beginner",
+    "topic": "travel",
+    "type": "vocabulary",
+    "question": "What is the German word for 'airport'?",
+    "answer": "Der Flughafen"
+  },
+  {
+    "id": 4,
+    "level": "beginner",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What article and word is used for 'apple' in German?",
+    "answer": "Der Apfel"
+  },
+  {
+    "id": 5,
+    "level": "beginner",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "In German, in a simple declarative sentence, what position does the finite verb take?",
+    "answer": "Second position (Position 2)."
+  },
+  {
+    "id": 6,
+    "level": "beginner",
+    "topic": "daily life",
+    "type": "translation",
+    "question": "Translate to German: 'I would like a coffee, please.'",
+    "answer": "Ich hätte gerne einen Kaffee, bitte. (or: Ich möchte einen Kaffee, bitte.)"
+  },
+  {
+    "id": 7,
+    "level": "beginner",
+    "topic": "word order",
+    "type": "grammar",
+    "question": "Rearrange these words into a correct German sentence: [heute / ich / nach Hause / gehe]",
+    "answer": "Heute gehe ich nach Hause. (or: Ich gehe heute nach Hause.)"
+  },
+  {
+    "id": 8,
+    "level": "beginner",
+    "topic": "basic conversation",
+    "type": "speaking",
+    "question": "How do you ask someone 'How are you?' politely in German?",
+    "answer": "Wie geht es Ihnen?"
+  },
+  {
+    "id": 9,
+    "level": "beginner",
+    "topic": "travel",
+    "type": "translation",
+    "question": "Translate to German: 'How much does a ticket to Berlin cost?'",
+    "answer": "Wie viel kostet eine Fahrkarte nach Berlin?"
+  },
+  {
+    "id": 10,
+    "level": "beginner",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What are the three definite articles (the) for masculine, feminine, and neuter nouns in nominative German?",
+    "answer": "der (masculine), die (feminine), das (neuter)"
+  },
+  {
+    "id": 11,
+    "level": "intermediate",
+    "topic": "travel",
+    "type": "sentence",
+    "question": "Translate to German: 'Could you please show me the way to the hotel?'",
+    "answer": "Könnten Sie mir bitte den Weg zum Hotel zeigen?"
+  },
+  {
+    "id": 12,
+    "level": "intermediate",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "When using a subordinate conjunction like 'weil' (because), where does the conjugated verb go?",
+    "answer": "At the very end of the clause."
+  },
+  {
+    "id": 13,
+    "level": "intermediate",
+    "topic": "daily life",
+    "type": "translation",
+    "question": "Translate to German: 'We are eating dinner together at seven o'clock.'",
+    "answer": "Wir essen um sieben Uhr zusammen zu Abend."
+  },
+  {
+    "id": 14,
+    "level": "intermediate",
+    "topic": "word order",
+    "type": "grammar",
+    "question": "Complete the sentence with 'weil': 'Ich bleibe zu Hause, weil ich... (to be sick: krank sein)'",
+    "answer": "Ich bleibe zu Hause, weil ich krank bin."
+  },
+  {
+    "id": 15,
+    "level": "intermediate",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What is the German noun for 'public transportation'?",
+    "answer": "Die öffentlichen Verkehrsmittel"
+  },
+  {
+    "id": 16,
+    "level": "intermediate",
+    "topic": "basic conversation",
+    "type": "speaking",
+    "question": "How do you explain in German that you have been learning German for 3 months?",
+    "answer": "Ich lerne seit drei Monaten Deutsch."
+  },
+  {
+    "id": 17,
+    "level": "intermediate",
+    "topic": "travel",
+    "type": "translation",
+    "question": "Translate to German: 'Is this seat taken?'",
+    "answer": "Ist dieser Platz besetzt?"
+  },
+  {
+    "id": 18,
+    "level": "intermediate",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "What prepositions in German always trigger the dative case? Name at least three.",
+    "answer": "aus, bei, mit, nach, seit, von, zu"
+  },
+  {
+    "id": 19,
+    "level": "advanced",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "In Konjunktiv II (subjunctive mood), how do you say 'If I had more time, I would learn German'?",
+    "answer": "Wenn ich mehr Zeit hätte, würde ich Deutsch lernen."
+  },
+  {
+    "id": 20,
+    "level": "advanced",
+    "topic": "daily life",
+    "type": "sentence",
+    "question": "Translate to German: 'Despite the bad weather, we decided to take a walk in the park.'",
+    "answer": "Trotz des schlechten Wetters haben wir beschlossen, im Park spazieren zu gehen."
+  },
+  {
+    "id": 21,
+    "level": "advanced",
+    "topic": "word order",
+    "type": "grammar",
+    "question": "Construct a sentence starting with 'Obwohl' (although): 'Although he was tired, he worked until midnight.'",
+    "answer": "Obwohl er müde war, hat er bis Mitternacht gearbeitet."
+  },
+  {
+    "id": 22,
+    "level": "advanced",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What does the German idiomatic phrase 'Die Daumen drücken' mean in English?",
+    "answer": "To keep one's fingers crossed / wish someone good luck."
+  },
+  {
+    "id": 23,
+    "level": "beginner",
+    "topic": "introductions",
+    "type": "translation",
+    "question": "Translate to German: 'Where are you from?' (informal)",
+    "answer": "Woher kommst du?"
+  },
+  {
+    "id": 24,
+    "level": "beginner",
+    "topic": "daily life",
+    "type": "vocabulary",
+    "question": "What is the German word for 'water' with its article?",
+    "answer": "Das Wasser"
+  },
+  {
+    "id": 25,
+    "level": "intermediate",
+    "topic": "travel",
+    "type": "speaking",
+    "question": "How do you ask for the bill at a German restaurant?",
+    "answer": "Die Rechnung, bitte! (or: Ich möchte bitte bezahlen.)"
+  },
+  {
+    "id": 26,
+    "level": "beginner",
+    "topic": "greetings",
+    "type": "speaking",
+    "question": "How do you say 'Good evening' and 'Good night' in German?",
+    "answer": "Guten Abend (Good evening) and Gute Nacht (Good night)."
+  },
+  {
+    "id": 27,
+    "level": "beginner",
+    "topic": "family",
+    "type": "vocabulary",
+    "question": "What are the German words with articles for 'mother' and 'father'?",
+    "answer": "Die Mutter (mother) and der Vater (father)."
+  },
+  {
+    "id": 28,
+    "level": "beginner",
+    "topic": "food & restaurants",
+    "type": "translation",
+    "question": "Translate to German: 'A table for two, please.'",
+    "answer": "Ein Tisch für zwei Personen, bitte. (or: Ein Tisch für zwei, bitte.)"
+  },
+  {
+    "id": 29,
+    "level": "beginner",
+    "topic": "hobbies",
+    "type": "speaking",
+    "question": "How do you say 'I like playing football' in German?",
+    "answer": "Ich spiele gerne Fußball."
+  },
+  {
+    "id": 30,
+    "level": "beginner",
+    "topic": "shopping",
+    "type": "vocabulary",
+    "question": "What is the German phrase for 'How much is this?'",
+    "answer": "Wie viel kostet das? (or: Was kostet das?)"
+  },
+  {
+    "id": 31,
+    "level": "beginner",
+    "topic": "directions",
+    "type": "speaking",
+    "question": "How do you ask 'Where is the bathroom?' in German?",
+    "answer": "Wo ist die Toilette? (or: Wo ist das Badezimmer?)"
+  },
+  {
+    "id": 32,
+    "level": "beginner",
+    "topic": "work",
+    "type": "translation",
+    "question": "Translate to German: 'I work in an office.'",
+    "answer": "Ich arbeite in einem Büro."
+  },
+  {
+    "id": 33,
+    "level": "beginner",
+    "topic": "education",
+    "type": "vocabulary",
+    "question": "What is the German word for 'school' with its article?",
+    "answer": "Die Schule"
+  },
+  {
+    "id": 34,
+    "level": "beginner",
+    "topic": "basic conversation",
+    "type": "speaking",
+    "question": "How do you say 'Thank you very much' and 'You're welcome' in German?",
+    "answer": "Vielen Dank (Thank you very much) and Bitte schön (You're welcome)."
+  },
+  {
+    "id": 35,
+    "level": "beginner",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "What is the correct present tense conjugation of 'sein' (to be) for 'ich', 'du', and 'er/sie/es'?",
+    "answer": "ich bin, du bist, er/sie/es ist"
+  },
+  {
+    "id": 36,
+    "level": "beginner",
+    "topic": "word order",
+    "type": "grammar",
+    "question": "Where does the verb go in a simple yes/no question in German? Give an example with 'trinken' (to drink).",
+    "answer": "The verb goes in first position. Example: Trinkst du Wasser?"
+  },
+  {
+    "id": 37,
+    "level": "beginner",
+    "topic": "daily life",
+    "type": "translation",
+    "question": "Translate to German: 'What time is it?'",
+    "answer": "Wie spät ist es? (or: Wie viel Uhr ist es?)"
+  },
+  {
+    "id": 38,
+    "level": "beginner",
+    "topic": "food & restaurants",
+    "type": "vocabulary",
+    "question": "What are the German words for 'bread' and 'butter' with their articles?",
+    "answer": "Das Brot (bread) and die Butter (butter)."
+  },
+  {
+    "id": 39,
+    "level": "beginner",
+    "topic": "family",
+    "type": "speaking",
+    "question": "How do you say 'I have a brother and a sister' in German?",
+    "answer": "Ich habe einen Bruder und eine Schwester."
+  },
+  {
+    "id": 40,
+    "level": "beginner",
+    "topic": "travel",
+    "type": "speaking",
+    "question": "How do you say 'I speak a little German' in German?",
+    "answer": "Ich spreche ein bisschen Deutsch."
+  },
+  {
+    "id": 41,
+    "level": "beginner",
+    "topic": "shopping",
+    "type": "translation",
+    "question": "Translate to German: 'Can I pay by card?'",
+    "answer": "Kann ich mit Karte zahlen? (or: Kann ich mit Karte bezahlen?)"
+  },
+  {
+    "id": 42,
+    "level": "beginner",
+    "topic": "daily life",
+    "type": "speaking",
+    "question": "How do you say 'See you tomorrow' and 'Goodbye' in German?",
+    "answer": "Bis morgen (See you tomorrow) and Auf Wiedersehen (or: Tschüss) for Goodbye."
+  },
+  {
+    "id": 43,
+    "level": "beginner",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What are the German words for the days of the week: Monday, Wednesday, and Friday?",
+    "answer": "Montag (Monday), Mittwoch (Wednesday), and Freitag (Friday)."
+  },
+  {
+    "id": 44,
+    "level": "A2",
+    "topic": "daily life",
+    "type": "sentence",
+    "question": "Translate to German: 'I usually get up at 7 o'clock in the morning.'",
+    "answer": "Ich stehe normalerweise um sieben Uhr morgens auf."
+  },
+  {
+    "id": 45,
+    "level": "A2",
+    "topic": "directions",
+    "type": "speaking",
+    "question": "How do you tell someone in German: 'Turn left at the supermarket and go straight ahead'?",
+    "answer": "Biegen Sie am Supermarkt links ab und gehen Sie geradeaus. (or: Biege am Supermarkt links ab...)"
+  },
+  {
+    "id": 46,
+    "level": "A2",
+    "topic": "travel",
+    "type": "sentence",
+    "question": "Translate to German: 'We stayed at a cozy hotel near the city center.'",
+    "answer": "Wir haben in einem gemütlichen Hotel in der Nähe des Stadtzentrums übernachtet."
+  },
+  {
+    "id": 47,
+    "level": "A2",
+    "topic": "food & restaurants",
+    "type": "translation",
+    "question": "Translate to German: 'Excuse me, could we order some water, please?'",
+    "answer": "Entschuldigung, könnten wir bitte etwas Wasser bestellen?"
+  },
+  {
+    "id": 48,
+    "level": "A2",
+    "topic": "work",
+    "type": "vocabulary",
+    "question": "What is the German term for 'job interview' and 'resume/CV'?",
+    "answer": "Das Vorstellungsgespräch (job interview) and der Lebenslauf (resume/CV)."
+  },
+  {
+    "id": 49,
+    "level": "A2",
+    "topic": "hobbies",
+    "type": "sentence",
+    "question": "Translate to German: 'In my free time, I like reading books and going to the cinema.'",
+    "answer": "In meiner Freizeit lese ich gerne Bücher und gehe ins Kino."
+  },
+  {
+    "id": 50,
+    "level": "A2",
+    "topic": "shopping",
+    "type": "speaking",
+    "question": "How do you ask a shop assistant in German: 'Do you have this shirt in a medium size?'",
+    "answer": "Haben Sie dieses Hemd in Größe M? (or: Haben Sie dieses Hemd in mittlerer Größe?)"
+  },
+  {
+    "id": 51,
+    "level": "A2",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "Form the past tense (Perfekt) of the verb 'fahren' (to drive/travel) in: 'Yesterday I drove to Munich.'",
+    "answer": "Gestern bin ich nach München gefahren."
+  },
+  {
+    "id": 52,
+    "level": "A2",
+    "topic": "education",
+    "type": "translation",
+    "question": "Translate to German: 'She is studying computer science at university.'",
+    "answer": "Sie studiert Informatik an der Universität. (or: Sie studiert Informatik an der Uni.)"
+  },
+  {
+    "id": 53,
+    "level": "A2",
+    "topic": "family",
+    "type": "speaking",
+    "question": "How do you describe your family in German by saying: 'My grandparents live in a small village'?",
+    "answer": "Meine Großeltern wohnen in einem kleinen Dorf. (or: Meine Großeltern leben in einem kleinen Dorf.)"
+  },
+  {
+    "id": 54,
+    "level": "A2",
+    "topic": "daily life",
+    "type": "translation",
+    "question": "Translate to German: 'What are you doing this weekend?'",
+    "answer": "Was machst du an diesem Wochenende? (or: Was machst du am Wochenende?)"
+  },
+  {
+    "id": 55,
+    "level": "A2",
+    "topic": "directions",
+    "type": "vocabulary",
+    "question": "What are the German words for 'crossroads/intersection' and 'traffic light'?",
+    "answer": "Die Kreuzung (intersection) and die Ampel (traffic light)."
+  },
+  {
+    "id": 56,
+    "level": "A2",
+    "topic": "food & restaurants",
+    "type": "speaking",
+    "question": "How do you ask in German if a dish contains nuts or dairy?",
+    "answer": "Enthält dieses Gericht Nüsse oder Milchprodukte?"
+  },
+  {
+    "id": 57,
+    "level": "A2",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "Which modal verb in German means 'to be allowed to' and how do you say 'You are not allowed to park here'?",
+    "answer": "The modal verb is 'dürfen'. Sentence: Hier dürfen Sie nicht parken. (or: Hier darfst du nicht parken.)"
+  },
+  {
+    "id": 58,
+    "level": "A2",
+    "topic": "shopping",
+    "type": "translation",
+    "question": "Translate to German: 'I would like to return this jacket because it is too small.'",
+    "answer": "Ich möchte diese Jacke zurückgeben, weil sie zu klein ist."
+  },
+  {
+    "id": 59,
+    "level": "A2",
+    "topic": "travel",
+    "type": "speaking",
+    "question": "How do you tell a taxi driver in German: 'Please take me to the central train station'?",
+    "answer": "Fahren Sie mich bitte zum Hauptbahnhof."
+  },
+  {
+    "id": 60,
+    "level": "A2",
+    "topic": "work",
+    "type": "sentence",
+    "question": "Translate to German: 'My colleague and I have a meeting at two o'clock.'",
+    "answer": "Mein Kollege und ich haben um zwei Uhr eine Besprechung. (or: ...ein Meeting.)"
+  },
+  {
+    "id": 61,
+    "level": "A2",
+    "topic": "basic conversation",
+    "type": "speaking",
+    "question": "How do you express in German that you didn't understand something and ask to repeat it?",
+    "answer": "Entschuldigung, das habe ich nicht verstanden. Können Sie das bitte wiederholen?"
+  },
+  {
+    "id": 62,
+    "level": "A2",
+    "topic": "word order",
+    "type": "grammar",
+    "question": "Connect these two sentences using 'dass' (that): 'Ich hoffe.' + 'Du kommst heute.'",
+    "answer": "Ich hoffe, dass du heute kommst."
+  },
+  {
+    "id": 63,
+    "level": "A2",
+    "topic": "daily life",
+    "type": "vocabulary",
+    "question": "What are the German words for the four seasons: Spring, Summer, Autumn, and Winter?",
+    "answer": "Der Frühling (Spring), der Sommer (Summer), der Herbst (Autumn), and der Winter (Winter)."
+  },
+  {
+    "id": 64,
+    "level": "intermediate",
+    "topic": "work",
+    "type": "sentence",
+    "question": "Translate to German: 'If I pass the job interview, I will move to Berlin in September.'",
+    "answer": "Wenn ich das Vorstellungsgespräch bestehe, ziehe ich im September nach Berlin."
+  },
+  {
+    "id": 65,
+    "level": "intermediate",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "How do you form a passive voice sentence in German for: 'The car is being repaired by the mechanic'?",
+    "answer": "Das Auto wird vom Mechaniker repariert."
+  },
+  {
+    "id": 66,
+    "level": "intermediate",
+    "topic": "daily life",
+    "type": "speaking",
+    "question": "How do you express your opinion politely in German using 'Meiner Meinung nach'?",
+    "answer": "Meiner Meinung nach ist dieses Thema sehr wichtig. (or any valid sentence starting with 'Meiner Meinung nach...')."
+  },
+  {
+    "id": 67,
+    "level": "intermediate",
+    "topic": "education",
+    "type": "translation",
+    "question": "Translate to German: 'Despite studying hard, he found the exam quite challenging.'",
+    "answer": "Obwohl er viel gelernt hat, fand er die Prüfung ziemlich schwierig."
+  },
+  {
+    "id": 68,
+    "level": "intermediate",
+    "topic": "hobbies",
+    "type": "sentence",
+    "question": "Translate to German: 'I have been playing the guitar since I was twelve years old.'",
+    "answer": "Ich spiele Gitarre, seit ich zwölf Jahre alt war. (or: Seit ich zwölf Jahre alt war, spiele ich Gitarre.)"
+  },
+  {
+    "id": 69,
+    "level": "intermediate",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What is the meaning of the German compound noun 'Die Sehenswürdigkeit'?",
+    "answer": "Tourist attraction / sight / landmark."
+  },
+  {
+    "id": 70,
+    "level": "advanced",
+    "topic": "work",
+    "type": "sentence",
+    "question": "Translate to German: 'Due to unexpected technical difficulties, the project launch had to be postponed.'",
+    "answer": "Aufgrund unerwarteter technischer Schwierigkeiten musste der Projektstart verschoben werden."
+  },
+  {
+    "id": 71,
+    "level": "advanced",
+    "topic": "grammar",
+    "type": "grammar",
+    "question": "Explain the difference between 'indem' and 'dadurch dass' in German instrumental clause construction.",
+    "answer": "'Indem' and 'dadurch dass' both express the means by which an action is accomplished ('by doing X'). 'Indem' introduces a subordinate clause with the verb at the end."
+  },
+  {
+    "id": 72,
+    "level": "advanced",
+    "topic": "speaking",
+    "type": "speaking",
+    "question": "How do you idiomatically express in German that someone is overcomplicating things or making a mountain out of a molehill?",
+    "answer": "Aus einer Mücke einen Elefanten machen."
+  },
+  {
+    "id": 73,
+    "level": "advanced",
+    "topic": "translation",
+    "type": "translation",
+    "question": "Translate to German: 'Had I known about the strike in advance, I would have chosen a different route.'",
+    "answer": "Hätte ich im Voraus vom Streik gewusst, hätte ich eine andere Route gewählt."
+  },
+  {
+    "id": 74,
+    "level": "advanced",
+    "topic": "vocabulary",
+    "type": "vocabulary",
+    "question": "What does the German idiomatic phrase 'Etwas durch die Blume sagen' mean?",
+    "answer": "To say something indirectly, diplomatically, or euphemistically."
+  },
+  {
+    "id": 75,
+    "level": "advanced",
+    "topic": "word order",
+    "type": "grammar",
+    "question": "Construct a complex sentence using double connectives 'je... desto...' (the... the...): 'The more you practice German, the better you speak.'",
+    "answer": "Je mehr du Deutsch übst, desto besser sprichst du."
+  }
+]
