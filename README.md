@@ -4,6 +4,7 @@
 
 **DeutschMate** is a real-time multilingual AI voice tutor designed to help learners practice German through natural, interactive voice conversations. Built for the **VoiceForBharat** challenge (*10 Days of Voice Agents*), DeutschMate combines low-latency real-time speech processing, persistent learner memory, and dynamic language-learning exercise retrieval into an intuitive, accessible voice experience.
 
+Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, and voice-first.
 ---
 
 ## 🌟 Key Features
