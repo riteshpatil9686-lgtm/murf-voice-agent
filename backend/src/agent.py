@@ -14,6 +14,16 @@ Practice Tool (Day 5):
   - Primary source: German Language Learning API (https://german-language.onrender.com).
   - Local fallback dataset: backend/data/german_exercises.json when external API
     is rate limited (429), times out, or unavailable.
+
+Outbound Calling (Day 6):
+  - outbound_practice_session() entrypoint handles dispatched "Daily German
+    Practice Call" jobs.
+  - Uses ctx.api.sip.create_sip_participant() with a pre-configured LiveKit
+    SIP Outbound Trunk to dial the learner's Linphone SIP address.
+  - Learner identity (Google sub) is passed via job metadata so Day 4 memory
+    is loaded identically to an inbound web session.
+  - Agent speaks first upon answer with a transparent introduction.
+  - Gracefully handles: no-answer, rejection, voicemail, and SIP errors.
 """
 
 import asyncio
@@ -27,7 +37,7 @@ import urllib.request
 import uuid
 
 from dotenv import load_dotenv
-from livekit import rtc
+from livekit import rtc, api
 from livekit.agents import (
     Agent,
     AgentServer,
@@ -36,6 +46,7 @@ from livekit.agents import (
     JobProcess,
     cli,
     function_tool,
+    get_job_context,
     inference,
     tokenize,
     room_io,
@@ -57,6 +68,11 @@ logger = logging.getLogger("agent")
 load_dotenv(".env.local")
 load_dotenv(".env")
 load_dotenv()
+
+# ---------------------------------------------------------------------------
+# Day 6 — Outbound SIP trunk (read once at startup; None if not configured)
+# ---------------------------------------------------------------------------
+SIP_OUTBOUND_TRUNK_ID: str | None = os.getenv("SIP_OUTBOUND_TRUNK_ID", "").strip() or None
 
 FALLBACK_DATA_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -476,6 +492,30 @@ class Assistant(Agent):
             return "Memory save blocked or database unavailable (Consent must be TRUE in database)."
 
     @function_tool(
+        description=(
+            "End the current phone call cleanly. "
+            "Call this tool when the learner says they want to hang up, stop, or end the session. "
+            "Always let any current spoken response finish before ending."
+        )
+    )
+    async def end_call(self, context: RunContext) -> str:
+        """Hang up the outbound call by deleting the LiveKit room."""
+        logger.info("[DIAGNOSTIC] end_call TOOL CALLED by LLM for learner_id=%s", self._user_id)
+        try:
+            job_ctx = get_job_context()
+            # Let any current TTS finish before tearing down
+            current_speech = context.session.current_speech
+            if current_speech:
+                await current_speech.wait_for_playout()
+            await job_ctx.api.room.delete_room(
+                api.DeleteRoomRequest(room=job_ctx.room.name)
+            )
+            logger.info("[DIAGNOSTIC] Room deleted — call ended cleanly.")
+        except Exception as exc:
+            logger.warning("[DIAGNOSTIC] end_call: room deletion failed [%s]: %s", type(exc).__name__, exc)
+        return "Call ended."
+
+    @function_tool(
         description="Retrieve the current learner's previously saved progress from the database. Does NOT require any user_id parameter."
     )
     async def lookup_learner_memory(
@@ -659,12 +699,74 @@ async def _get_learner_id(ctx: JobContext) -> str:
 
 
 
+def _extract_sip_user(sip_uri: str) -> str:
+    """
+    Extract only the SIP user or phone number from a SIP URI.
+    LiveKit's CreateSIPParticipant API expects `sip_call_to` to be a user or phone number,
+    not a full SIP URI (e.g. 'sip:justtcocoo@sip.linphone.org' -> 'justtcocoo').
+    """
+    target = sip_uri.strip()
+    if target.startswith("sip:"):
+        target = target[4:]
+    if "@" in target:
+        target = target.split("@")[0]
+    return target
+
+
+# Outbound-specific addition to the base system prompt.
+# This block is appended when the agent is operating in outbound mode.
+_OUTBOUND_GREETING_INSTRUCTIONS = """\
+---
+OUTBOUND CALL BEHAVIOUR — CRITICAL:
+
+This is an OUTBOUND call made by DeutschMate to the learner.
+The learner did NOT initiate this call.
+
+When the call connects and the participant joins, you MUST speak FIRST.
+Your very first words must clearly state:
+  1. WHO is calling (DeutschMate, an AI German tutor)
+  2. WHY you are calling (their daily German practice session)
+  3. That they can hang up / end the call at any time
+
+Use a natural, concise opening such as:
+  "Hallo! This is DeutschMate, your AI German tutor. I'm calling for your
+   daily German practice session. You can hang up anytime if you'd like to stop.
+   Are you ready to practice?"
+
+Do NOT wait for the learner to speak first.
+Do NOT sound like a deceptive human caller.
+After the introduction, proceed with the normal German practice session.
+
+If the learner did not answer and you reach voicemail / an automated system:
+  - Do NOT leave a message.
+  - Call the `end_call` tool immediately.
+
+If the learner asks to end the call, or says goodbye:
+  - Acknowledge politely, then call the `end_call` tool.
+"""
+
+
 @server.rtc_session(agent_name="my-agent")
 async def my_agent(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
 
+    # 1. Determine if this job is an outbound practice call based on dispatch metadata
+    call_type: str = ""
+    sip_uri: str = ""
+    if ctx.job and ctx.job.metadata:
+        try:
+            meta = json.loads(ctx.job.metadata)
+            if isinstance(meta, dict):
+                call_type = meta.get("call_type", "").strip()
+                sip_uri = meta.get("sip_uri", "").strip()
+        except Exception:
+            pass
+
+    is_outbound = (call_type == "daily_german_practice") or bool(sip_uri)
+
+    # 2. Connect to the LiveKit room & resolve learner memory
     await ctx.connect()
 
     learner_id = await _get_learner_id(ctx)
@@ -682,8 +784,122 @@ async def my_agent(ctx: JobContext):
     else:
         logger.info("[DIAGNOSTIC] memory context injected: NO")
 
-    system_prompt = _build_system_prompt(existing_memory)
+    # 3. Construct system prompt with memory context (+ outbound greeting instructions if outbound)
+    base_prompt = _build_system_prompt(existing_memory)
+    system_prompt = base_prompt + _OUTBOUND_GREETING_INSTRUCTIONS if is_outbound else base_prompt
 
+    # 4. Handle Outbound Session Flow (Day 6)
+    if is_outbound:
+        logger.info("[OUTBOUND] Outbound practice call detected | room=%s", ctx.room.name)
+        if not SIP_OUTBOUND_TRUNK_ID:
+            logger.error(
+                "[OUTBOUND] SIP_OUTBOUND_TRUNK_ID is not set. "
+                "Configure it in backend/.env.local and restart the agent."
+            )
+            ctx.shutdown()
+            return
+
+        if not sip_uri:
+            logger.error(
+                "[OUTBOUND] No 'sip_uri' found in job metadata. "
+                "Pass --sip-uri when triggering the call via outbound_call.py."
+            )
+            ctx.shutdown()
+            return
+
+        logger.info("[OUTBOUND] Dialing SIP target: %s", sip_uri)
+        sip_user = _extract_sip_user(sip_uri)
+        participant_identity = sip_uri
+
+        try:
+            logger.info(
+                "[OUTBOUND] Initiating SIP call to user '%s' (URI: %s) via trunk %s",
+                sip_user,
+                sip_uri,
+                SIP_OUTBOUND_TRUNK_ID[:8] + "...",
+            )
+            await ctx.api.sip.create_sip_participant(
+                api.CreateSIPParticipantRequest(
+                    room_name=ctx.room.name,
+                    sip_trunk_id=SIP_OUTBOUND_TRUNK_ID,
+                    sip_call_to=sip_user,
+                    participant_identity=participant_identity,
+                    participant_name="DeutschMate Learner",
+                    wait_until_answered=True,
+                )
+            )
+            logger.info("[OUTBOUND] Call answered by %s", sip_uri)
+
+        except api.TwirpError as exc:
+            sip_code = exc.metadata.get("sip_status_code", "unknown")
+            sip_status = exc.metadata.get("sip_status", "")
+            logger.error(
+                "[OUTBOUND] SIP call failed | SIP status: %s %s | details: %s",
+                sip_code,
+                sip_status,
+                exc.message,
+            )
+            if sip_code in ("486", "600"):
+                logger.warning("[OUTBOUND] Learner is busy (SIP %s).", sip_code)
+            elif sip_code in ("408", "480", "487"):
+                logger.warning("[OUTBOUND] Call not answered or timed out (SIP %s).", sip_code)
+            elif sip_code in ("404", "410"):
+                logger.warning("[OUTBOUND] SIP URI not found (SIP %s). Check Linphone registration.", sip_code)
+            elif sip_code == "603":
+                logger.warning("[OUTBOUND] Learner declined the call (SIP 603).")
+            else:
+                logger.error("[OUTBOUND] Unexpected SIP error (SIP %s).", sip_code)
+            ctx.shutdown()
+            return
+
+        except Exception as exc:
+            logger.error(
+                "[OUTBOUND] Unexpected error while creating SIP participant [%s]: %s",
+                type(exc).__name__,
+                exc,
+            )
+            ctx.shutdown()
+            return
+
+        try:
+            participant = await ctx.wait_for_participant(identity=participant_identity)
+            logger.info("[OUTBOUND] Participant joined: %s", participant.identity)
+        except asyncio.TimeoutError:
+            logger.error("[OUTBOUND] Participant did not join within timeout after answering.")
+            ctx.shutdown()
+            return
+
+        session = AgentSession(
+            stt=deepgram.STT(model="nova-3", language="multi"),
+            llm=google.LLM(model="gemini-3.5-flash-lite"),
+            tts=murf.TTS(
+                voice="Anisha",
+                style="Conversation",
+                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
+                text_pacing=True,
+            ),
+            turn_detection=MultilingualModel(),
+            vad=ctx.proc.userdata["vad"],
+            preemptive_generation=True,
+        )
+
+        agent = Assistant(system_prompt=system_prompt, user_id=learner_id)
+
+        await session.start(
+            agent=agent,
+            room=ctx.room,
+            room_options=room_io.RoomOptions(
+                audio_input=room_io.AudioInputOptions(
+                    noise_cancellation=noise_cancellation.BVCTelephony(),
+                ),
+            ),
+        )
+
+        logger.info("[OUTBOUND] Session active after participant join — triggering first greeting.")
+        await session.generate_reply()
+        return
+
+    # 5. Handle Normal Browser Session Flow
     session = AgentSession(
         stt=deepgram.STT(model="nova-3", language="multi"),
         llm=google.LLM(
@@ -718,3 +934,4 @@ async def my_agent(ctx: JobContext):
 
 if __name__ == "__main__":
     cli.run_app(server)
+

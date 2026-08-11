@@ -146,6 +146,94 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
 - [x] **Day 3 — Building the DeutschMate Frontend**: Designed a liquid-glass UI with 5 agent states (`Ready`, `Connecting`, `Listening`, `Speaking`, `Call ended`), microphone controls, and custom branding.
 - [x] **Day 4 — Giving DeutschMate Memory**: Integrated PostgreSQL and Google OAuth to establish stable `sub`-based learner profiles, supporting consent-gated memory storage across sessions.
 - [x] **Day 5 — Giving DeutschMate Access to Learning Data**: Built the `get_german_practice()` tool with primary external API fetching, level/topic matching, and an expanded 75-exercise local JSON fallback engine.
+- [x] **Day 6 — Outbound Calling (Learning & Literacy Track)**: Added Daily German Practice Call capability. DeutschMate calls the learner's Linphone SIP address, speaks first with a transparent introduction, then conducts a full German practice session using the complete Day 4/5 pipeline.
+
+---
+
+## 📞 Day 6 — Daily German Practice Call (Outbound via Linphone)
+
+> **VoiceForBharat Challenge — Learning & Literacy Track**
+> DeutschMate calls a learner for a short German practice session using the official Linphone/SIP outbound approach.
+
+### Architecture
+
+```
+[outbound_call.py]                   ← You run this script to trigger the call
+       │
+       │  LiveKit Dispatch API
+       │  (CreateAgentDispatch — new room + metadata JSON)
+       │
+       ▼
+[DeutschMate Agent Worker]           ← Already running via `python src/agent.py dev`
+(outbound_practice_session entrypoint)
+       │
+       │  LiveKit SIP Outbound Trunk
+       │  (ctx.api.sip.create_sip_participant, wait_until_answered=True)
+       │
+       ▼
+[Linphone App]                       ← Learner's SIP softphone (sip.linphone.org)
+       │
+       │  Learner answers
+       │
+       ▼
+[DeutschMate Agent speaks FIRST]
+  "Hallo! This is DeutschMate, your AI German tutor.
+   I'm calling for your daily German practice session.
+   You can hang up anytime if you'd like to stop."
+       │
+       ▼
+[Normal German Practice Session]     ← Murf Falcon + Deepgram + Gemini + Memory + Practice Tool
+```
+
+### Learner Identity
+The outbound call passes the learner's authenticated **Google `sub` ID** as `learner_id` inside the dispatch metadata JSON. The agent's `_get_learner_id()` reads this from `ctx.job.metadata` (highest-priority path), so the **same PostgreSQL memory** is loaded as in a normal web session. No UUID is generated, no phone number is used as identity.
+
+### Setup Requirements
+
+#### 1. Linphone Account
+- Download Linphone: [linphone.org](https://www.linphone.org/)
+- Create a free SIP account on `sip.linphone.org`
+- Your SIP address will be: `sip:yourusername@sip.linphone.org`
+- Keep Linphone open and registered before triggering the call
+
+#### 2. LiveKit SIP Outbound Trunk
+- Log in to [LiveKit Cloud](https://cloud.livekit.io/)
+- Navigate to **SIP → Outbound Trunks → Create Trunk**
+- Configure with your SIP provider credentials (for Linphone testing: `sip.linphone.org`, your Linphone username/password)
+- Copy the generated **Trunk ID** (format: `ST_xxxxxxxxxxxx`)
+
+#### 3. Environment Variable
+Add to `backend/.env.local`:
+```env
+SIP_OUTBOUND_TRUNK_ID=ST_your_trunk_id_here
+```
+
+### Triggering an Outbound Call
+
+```powershell
+# Ensure the agent is running first (in a separate terminal):
+cd backend
+uv run python src/agent.py dev
+
+# Then trigger the outbound call:
+cd backend
+uv run python src/outbound_call.py \
+    --sip-uri "sip:yourusername@sip.linphone.org" \
+    --learner-id "your_google_sub_id_here"
+```
+
+> **Finding your Google `sub` ID**: It is logged in the agent terminal when you sign in via the web UI. Look for lines like `[DIAGNOSTIC] Authenticated learner_id from room metadata: 1234567890`.
+
+### Call States & Error Handling
+
+| SIP Status | Meaning | Agent Behaviour |
+|:---|:---|:---|
+| **2xx (Answered)** | Learner picked up | Agent speaks first with transparent intro |
+| **486 / 600** | Busy | Logged and session ends cleanly |
+| **408 / 480 / 487** | No answer / Timeout | Logged and session ends cleanly |
+| **404 / 410** | SIP URI not found | Check Linphone registration |
+| **603** | Declined | Logged and session ends cleanly |
+| **Voicemail detected** | Automated system | Agent calls `end_call` immediately |
 
 ---
 
