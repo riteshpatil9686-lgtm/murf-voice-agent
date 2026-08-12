@@ -63,6 +63,18 @@ try:
 except ImportError:
     MEMORY_AVAILABLE = False
 
+# Escalation layer — safe to import even if escalation.py fails
+try:
+    from escalation import (
+        generate_reference_id,
+        sanitize_text,
+        send_escalation_email,
+        save_escalation_db,
+    )
+    ESCALATION_AVAILABLE = True
+except ImportError:
+    ESCALATION_AVAILABLE = False
+
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
@@ -314,57 +326,116 @@ ONE-TIME MEMORY CONSENT & AUTOMATIC SAVING RULES:
    - If a user who previously declined later says to save their progress (e.g., "You can save my details now"), call `set_memory_consent(consent_granted=True)`.
    - If a user who previously agreed later says to stop saving (e.g., "Stop saving my details"), call `set_memory_consent(consent_granted=False)`.
 
-5.
-LANGUAGE & SCRIPT — CRITICAL
+5. LANGUAGE & SCRIPT — STRICT RULE
 
-The user's CURRENT spoken language determines the language of your response.
+STRICT RULE FOR RESPONSE LANGUAGE:
+ALWAYS respond in the language used by the learner's LATEST meaningful utterance, unless the learner explicitly requests another language.
 
-1. If the user speaks Hindi:
-   - Respond in Hindi.
-   - Use Devanagari script.
-   - Example: User: "मुझे जर्मन सीखना है"
-     Response: "बिल्कुल! चलिए जर्मन से शुरू करते हैं।"
+1. LATEST UTTERANCE DRIVES LANGUAGE:
+   - If the user's latest utterance is in English (e.g. "I'm very anxious, I'm not understanding." or "Can you connect me with a teacher?"), respond strictly in ENGLISH.
+   - If the user's latest utterance is in Hindi / Hinglish (e.g. "Mujhe German samajh nahi aa raha." or "Mujhe bahut anxiety ho rahi hai"), respond in HINDI / HINGLISH.
+   - If the user's latest utterance is in German (e.g. "Ich verstehe das nicht."), respond in GERMAN.
 
-2. If the user speaks Hinglish:
-   - Respond naturally in Hinglish.
-   - Hindi words must use Devanagari.
-   - English words may remain in Latin script.
-   - Example: "बिल्कुल! आज हम German में कुछ नए words सीखते हैं।"
+2. DO NOT INFER OR ASSUME HINGLISH / HINDI:
+   - NEVER infer Hinglish or Hindi merely because the learner's profile, name, location, or previous conversation history suggests India or Hinglish.
+   - DO NOT switch to Hindi just because the learner has previously spoken Hindi or has a saved language preference. The LATEST user utterance is the absolute primary signal.
+   - For mixed-language utterances, use the dominant language of the latest utterance. If genuinely ambiguous, continue in the language most recently used by the learner rather than switching unexpectedly.
 
-3. If the user speaks English:
-   - Respond in English.
+3. SCRIPT PRESERVATION:
+   - Hindi → Devanagari script (e.g. "बिल्कुल!")
+   - German → Latin script with ä, ö, ü, ß
+   - English → Latin script
 
-4. If the user speaks German:
-   - Respond primarily in German.
+4. ESCALATION TOOL LANGUAGE PARAMETER:
+   - The `language` field passed to `create_escalation` MUST reflect the learner's actual conversation language for the current session (e.g. "English", "Hindi", "German", "Hinglish"). If the user spoke English, set language="English", NOT "Hinglish".
 
-5. If the user switches languages during the conversation:
-   - Immediately follow the NEW language.
-   - Do not continue using the previous language.
+5. Always respond in the language of the learner's latest meaningful utterance.
 
-6. German being the subject of the lesson does NOT mean the response
-   language must be English.
-   For example, if the learner asks in Hindi:
-   "मुझे German में 'How are you?' कैसे बोलते हैं?"
-   Respond in Hindi:
-   "German में आप कह सकते हैं, 'Wie geht es dir?'"
+For Hindi:
+- Use natural Indian Hindi pronunciation and phrasing.
+- Hindi must be written in Devanagari script.
+- Do not use Romanized Hindi/Hinglish when the learner is speaking Hindi.
+- Do not use an English/Western Hindi accent.
+- Prefer natural Indian Hindi vocabulary and sentence structure.
 
-7. NEVER force English as the response language simply because the topic
-   is German.
+For English:
+- Respond in English.
 
-8. Always preserve native scripts:
-   Hindi → Devanagari
-   German → Latin script with ä, ö, ü, ß
-   English → Latin script
+For German:
+- Respond in German
 
-9. For voice responses, prioritize the detected/current spoken language
-   over the learner's saved language preference unless the user explicitly
-   asks to use a different language.
+ TTS PRONUNCIATION — INDIAN HINDI
+
+When responding in Hindi:
+- Use natural Indian Hindi pronunciation.
+- Speak Hindi as an Indian Hindi speaker would naturally speak it.
+- Do NOT pronounce Hindi using an American, British, European, or other foreign accent.
+- Do NOT use an English-accented pronunciation of Hindi words.
+- Maintain natural Indian Hindi rhythm, pronunciation, and intonation.
+- If the learner speaks Hindi, the spoken response must sound like natural Indian Hindi, not English spoken with Hindi words.
 ---
 6. EXERCISE PRACTICE & ANSWER PROTECTION RULES:
 - Call `get_german_practice` when the user asks for a German exercise, quiz, vocabulary practice, grammar exercise, translation challenge, speaking exercise, or asks 'give me something to practice'.
 - Do NOT call `get_german_practice` for casual conversation or general questions that do not require retrieving exercise content.
 - CRITICAL EXERCISE ANSWER PROTECTION RULE: When presenting an exercise from `get_german_practice`, ask the learner the question FIRST. DO NOT reveal the correct answer until AFTER the learner has made an attempt or explicitly requested the answer.
 - If the tool result contains a `note` (e.g. indicating offline fallback), inform the user naturally (e.g., "The online learning library isn't available right now, so I'll use an offline exercise instead.") before asking the question.
+---
+7. HUMAN TEACHER ESCALATION RULES (DAY 7):
+
+- ESCALATION TRIGGERS (WHEN TO OFFER HUMAN TEACHER ESCALATION):
+  You MUST recognize these TWO situations as valid reasons to OFFER escalation to a human teacher:
+  1. Significant learner distress, frustration, anxiety, stress, or feeling overwhelmed while struggling to learn.
+     Examples that MUST trigger an escalation OFFER:
+     * "I'm very anxious."
+     * "I'm frustrated."
+     * "I'm overwhelmed."
+     * "I'm getting stressed."
+     * "I don't understand anything."
+     * "This is too difficult for me."
+     * "Mujhe bahut anxiety ho rahi hai aur mujhe samajh nahi aa raha."
+  2. Any explicit request for human teacher help or human intervention.
+     Examples that MUST trigger an escalation OFFER:
+     * "I need help from a teacher."
+     * "Can I talk to a teacher?"
+     * "I want to speak to a human."
+     * "Can you connect me with my teacher?"
+     * Grading official exam essays, official exam evaluations, or account/administrative intervention.
+
+- DO NOT ESCALATE normal German learning questions:
+  * Do NOT offer or suggest escalation for normal German practice, vocabulary questions, grammar explanations, pronunciation practice, or standard exercises (e.g., "Can you teach me how to introduce myself in German?", "Wie sagt man 'How are you?' auf Deutsch?"). Answer those yourself naturally!
+
+- MANDATORY PRE-CALL CONSENT FLOW:
+  * When an escalation trigger occurs, you MUST NOT automatically call `create_escalation`.
+  * First acknowledge their feeling in their spoken language, explain what information will be shared, and ask for explicit permission to contact the teacher:
+    Example (English): "I understand. It sounds like you're having a difficult time. I can send a short summary to a human teacher so they can help you. It would include what you're struggling with, what we already tried, the urgency, and your preferred follow-up method. Would you like me to send that?"
+    Example (Hindi): "मैं समझ सकता हूँ। ऐसा लग रहा है कि आपको परेशानी हो रही है। मैं एक human teacher को आपका summary भेज सकता हूँ जिसमें आपकी problem और urgency होगी। क्या मैं यह संदेश भेज दूँ?"
+  * WAIT for the learner's explicit response.
+
+- IF LEARNER SAYS YES / GRANTS PERMISSION (e.g., "Yes", "Please do", "Haan", "Send it"):
+  * Call `create_escalation(consent_confirmed=True, ...)` ONLY AFTER the learner explicitly says YES.
+  * Check the tool return result carefully!
+  * IF TOOL RETURNS SUCCESS (with Reference ID):
+    - Tell the learner their Reference ID clearly (e.g. "DM-2026-XXXXXX").
+    - Explain honestly what happens next: "A teacher can review it and follow up through the configured support process."
+  * IF TOOL RETURNS DELIVERY FAILURE (email failed or unconfigured):
+    - DO NOT give a fake reference ID.
+    - DO NOT claim the email was sent successfully.
+    - Tell the learner honestly that the request could not be delivered right now due to a technical issue, and offer a fallback (e.g. offer to continue helping them directly).
+
+- IF LEARNER SAYS NO / DECLINES PERMISSION (e.g., "No", "No, don't contact my teacher", "Nahi", "Don't send it"):
+  * DO NOT call `create_escalation`.
+  * DO NOT send an email.
+  * Say: "No problem. I won't send anything."
+  * Continue the conversation normally in their language.
+
+- PRIVACY & MINIMUM INFORMATION RULE:
+  * Include ONLY the minimum useful summary, what was checked, urgency, language.
+  * NEVER include passwords, OTPs, PINs, auth tokens, API keys, or private credentials.
+  * Do NOT include full conversation transcripts.
+
+- URGENCY & HONESTY:
+  * Choose 'low', 'medium', or 'high' urgency based on the situation.
+  * Never promise an immediate response unless guaranteed.
 """
 
 
@@ -383,7 +454,7 @@ def _build_system_prompt(memory: dict | None) -> str:
     if memory.get("learning_goal"):
         parts.append(f"Learning goal: {memory['learning_goal']}")
     if memory.get("language_preference"):
-        parts.append(f"Language preference: {memory['language_preference']}")
+        parts.append(f"Language preference: {memory['language_preference']} (Historical preference only — ALWAYS prioritize the learner's LATEST spoken utterance!)")
     if memory.get("topics_covered"):
         topics = ", ".join(memory["topics_covered"])
         parts.append(f"Topics already covered: {topics}")
@@ -618,6 +689,108 @@ class Assistant(Agent):
             "status": "error",
             "message": "I'm unable to load an exercise right now. Please try again in a moment."
         })
+
+    @function_tool(
+        description=(
+            "Create an escalation request and email a human teacher for help. "
+            "Use this tool ONLY when the learner is frustrated/upset and explicitly requests a teacher, "
+            "or asks for something requiring human teacher judgment or intervention. "
+            "CRITICAL REQUIREMENT: You MUST ask the learner for permission FIRST and receive explicit YES consent BEFORE calling this tool. "
+            "Set consent_confirmed=True ONLY after the learner explicitly agrees."
+        )
+    )
+    async def create_escalation(
+        self,
+        context: RunContext,
+        reason: str,
+        summary: str,
+        what_was_checked: str,
+        urgency: str = "medium",
+        consent_confirmed: bool = False,
+        language: str = "English",
+        preferred_follow_up: str = "Email",
+    ) -> str:
+        """Create and submit an escalation request to a human teacher via email."""
+        logger.info("[ESCALATION] Escalation requested for learner_id=%s | urgency=%s", self._user_id, urgency)
+
+        if not consent_confirmed:
+            logger.warning("[ESCALATION] Learner declined consent for learner_id=%s", self._user_id)
+            return (
+                "Escalation cancelled: Learner consent was not confirmed. "
+                "You MUST ask the learner for permission and get explicit YES consent before calling create_escalation."
+            )
+
+        logger.info("[ESCALATION] Consent confirmed for learner_id=%s", self._user_id)
+
+        valid_urgency = urgency.lower() if urgency.lower() in ("low", "medium", "high") else "medium"
+
+        if ESCALATION_AVAILABLE:
+            safe_reason = sanitize_text(reason)
+            safe_summary = sanitize_text(summary)
+            safe_checked = sanitize_text(what_was_checked)
+            ref_id = generate_reference_id()
+        else:
+            safe_reason = reason
+            safe_summary = summary
+            safe_checked = what_was_checked
+            ref_id = f"DM-2026-{uuid.uuid4().hex[:6].upper()}"
+
+        logger.info("[ESCALATION] Creating request %s for learner_id=%s", ref_id, self._user_id)
+
+        if not ESCALATION_AVAILABLE:
+            logger.error("[ESCALATION] Escalation module not available.")
+            return "Escalation module is not available."
+
+        success, email_err = await send_escalation_email(
+            reference_id=ref_id,
+            learner_id=self._user_id,
+            summary=safe_summary,
+            what_was_checked=safe_checked,
+            urgency=valid_urgency,
+            language=language,
+            preferred_follow_up=preferred_follow_up,
+        )
+
+        if not success:
+            logger.error("[ESCALATION] Failed to send email for request %s: %s", ref_id, email_err)
+            await save_escalation_db(
+                reference_id=ref_id,
+                learner_id=self._user_id,
+                reason=safe_reason,
+                summary=safe_summary,
+                what_was_checked=safe_checked,
+                urgency=valid_urgency,
+                language=language,
+                preferred_follow_up=preferred_follow_up,
+                status="failed_email",
+            )
+            return (
+                f"EMAIL DELIVERY FAILED ({email_err}). "
+                "CRITICAL INSTRUCTION FOR ASSISTANT: The escalation email COULD NOT BE DELIVERED due to a technical delivery error. "
+                "You MUST tell the learner honestly in their current conversation language that your request could not be sent right now due to a technical delivery issue. "
+                "Do NOT give the learner a reference ID! Do NOT claim that a teacher was notified or that an escalation was sent! "
+                "Provide an honest fallback, e.g. offer to continue helping them directly or suggest trying again later."
+            )
+
+        logger.info("[ESCALATION] Email sent successfully for request %s", ref_id)
+
+        await save_escalation_db(
+            reference_id=ref_id,
+            learner_id=self._user_id,
+            reason=safe_reason,
+            summary=safe_summary,
+            what_was_checked=safe_checked,
+            urgency=valid_urgency,
+            language=language,
+            preferred_follow_up=preferred_follow_up,
+            status="open",
+        )
+
+        return (
+            f"Escalation request {ref_id} created and sent successfully to the human teacher. "
+            f"Tell the learner their reference ID is {ref_id} and explain that a teacher can review it "
+            "and follow up through the configured support process."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -873,7 +1046,7 @@ async def my_agent(ctx: JobContext):
             stt=deepgram.STT(model="nova-3", language="multi"),
             llm=google.LLM(model="gemini-3.5-flash-lite"),
             tts=murf.TTS(
-                voice="Anisha",
+                voice="Pooja",
                 style="Conversation",
                 tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
                 text_pacing=True,

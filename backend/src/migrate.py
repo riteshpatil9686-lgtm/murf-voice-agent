@@ -45,6 +45,26 @@ CREATE INDEX IF NOT EXISTS idx_learner_memory_user_id
 -- Index for querying recently active learners
 CREATE INDEX IF NOT EXISTS idx_learner_memory_last_interaction
     ON learner_memory (last_interaction DESC NULLS LAST);
+
+-- Day 7: Escalation requests table
+CREATE TABLE IF NOT EXISTS escalation_requests (
+    reference_id        TEXT PRIMARY KEY,
+    learner_id          TEXT        NOT NULL,
+    reason              TEXT        NOT NULL DEFAULT '',
+    summary             TEXT        NOT NULL DEFAULT '',
+    what_was_checked    TEXT        NOT NULL DEFAULT '',
+    urgency             TEXT        NOT NULL DEFAULT 'medium',
+    language            TEXT        NOT NULL DEFAULT '',
+    preferred_follow_up TEXT        NOT NULL DEFAULT '',
+    status              TEXT        NOT NULL DEFAULT 'open',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_escalation_requests_learner_id
+    ON escalation_requests (learner_id);
+
+CREATE INDEX IF NOT EXISTS idx_escalation_requests_status
+    ON escalation_requests (status);
 """
 
 
