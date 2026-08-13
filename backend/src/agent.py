@@ -63,6 +63,13 @@ try:
 except ImportError:
     MEMORY_AVAILABLE = False
 
+# Day 8 — Analytics layer
+try:
+    from analytics import record_call
+    ANALYTICS_AVAILABLE = True
+except ImportError:
+    ANALYTICS_AVAILABLE = False
+
 # Escalation layer — safe to import even if escalation.py fails
 try:
     from escalation import (
@@ -379,6 +386,14 @@ When responding in Hindi:
 - Do NOT call `get_german_practice` for casual conversation or general questions that do not require retrieving exercise content.
 - CRITICAL EXERCISE ANSWER PROTECTION RULE: When presenting an exercise from `get_german_practice`, ask the learner the question FIRST. DO NOT reveal the correct answer until AFTER the learner has made an attempt or explicitly requested the answer.
 - If the tool result contains a `note` (e.g. indicating offline fallback), inform the user naturally (e.g., "The online learning library isn't available right now, so I'll use an offline exercise instead.") before asking the question.
+
+8. EXERCISE COMPLETION TRACKING (DAY 8):
+- After presenting an exercise from `get_german_practice`, evaluate the learner's response:
+  * If the learner's answer is CORRECT: call `mark_exercise_complete`, then give positive feedback.
+  * If the learner's answer is INCORRECT: do NOT call `mark_exercise_complete`. Correct them and let them try again.
+  * NEVER call `mark_exercise_complete` just because the learner attempted the exercise.
+  * NEVER call `mark_exercise_complete` for partial, wrong, or unclear answers.
+  * Only call `mark_exercise_complete` ONCE per exercise, the moment the learner first gives a fully correct answer.
 ---
 7. HUMAN TEACHER ESCALATION RULES (DAY 7):
 
@@ -490,6 +505,8 @@ class Assistant(Agent):
     def __init__(self, system_prompt: str, user_id: str) -> None:
         super().__init__(instructions=system_prompt)
         self._user_id = user_id
+        # Day 8: tracks whether the learner correctly completed an exercise this session
+        self.exercise_completed: bool = False
 
     @function_tool(
         description="Record the user's ONE-TIME choice regarding memory consent (True to allow remembering, False to decline)."
@@ -561,6 +578,23 @@ class Assistant(Agent):
         else:
             logger.warning("[DIAGNOSTIC] SAVE BLOCKED or FAILED: save_memory returned False for authenticated learner_id=%s", self._user_id)
             return "Memory save blocked or database unavailable (Consent must be TRUE in database)."
+
+    @function_tool(
+        description=(
+            "Mark the current exercise as successfully completed. "
+            "Call this tool ONLY when: (1) an exercise was presented via get_german_practice, "
+            "(2) the learner attempted it, AND (3) the learner's answer is fully correct. "
+            "Do NOT call this for wrong or partial answers. Do NOT call this for casual conversation."
+        )
+    )
+    async def mark_exercise_complete(self, context: RunContext) -> str:
+        """Signal that the learner correctly completed the current exercise."""
+        self.exercise_completed = True
+        logger.info(
+            "[ANALYTICS] mark_exercise_complete called — learner_id=%s",
+            self._user_id,
+        )
+        return "Exercise marked as successfully completed."
 
     @function_tool(
         description=(
@@ -943,6 +977,10 @@ async def my_agent(ctx: JobContext):
     await ctx.connect()
 
     learner_id = await _get_learner_id(ctx)
+
+    # Day 8: generate a stable session ID for this call
+    import uuid as _uuid
+    session_id = str(_uuid.uuid4())
     logger.info("[DIAGNOSTIC] learner_id received by agent: %s", learner_id)
 
     existing_memory: dict | None = None
@@ -1089,8 +1127,23 @@ async def my_agent(ctx: JobContext):
         preemptive_generation=True,
     )
 
+    browser_agent = Assistant(system_prompt=system_prompt, user_id=learner_id)
+
+    # Day 8: register shutdown hook to record analytics outcome
+    async def _record_analytics() -> None:
+        if not ANALYTICS_AVAILABLE:
+            return
+        outcome = "success" if browser_agent.exercise_completed else "failed"
+        await record_call(
+            session_id=session_id,
+            learner_id=learner_id,
+            channel="browser",
+            outcome=outcome,
+        )
+    ctx.add_shutdown_callback(_record_analytics)
+
     await session.start(
-        agent=Assistant(system_prompt=system_prompt, user_id=learner_id),
+        agent=browser_agent,
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(

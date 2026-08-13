@@ -65,6 +65,21 @@ CREATE INDEX IF NOT EXISTS idx_escalation_requests_learner_id
 
 CREATE INDEX IF NOT EXISTS idx_escalation_requests_status
     ON escalation_requests (status);
+
+-- Day 8: Call analytics table
+CREATE TABLE IF NOT EXISTS call_analytics (
+    session_id  TEXT        PRIMARY KEY,
+    learner_id  TEXT        NOT NULL DEFAULT '',
+    channel     TEXT        NOT NULL DEFAULT 'browser',
+    outcome     TEXT        NOT NULL DEFAULT 'failed',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_call_analytics_outcome
+    ON call_analytics (outcome);
+
+CREATE INDEX IF NOT EXISTS idx_call_analytics_created_at
+    ON call_analytics (created_at DESC);
 """
 
 
