@@ -2,9 +2,10 @@
 
 > *"Language is learned in conversation."*
 
-**DeutschMate** is a real-time multilingual AI voice tutor designed to help learners practice German through natural, interactive voice conversations. Built for the **VoiceForBharat** challenge (*10 Days of Voice Agents*), DeutschMate combines low-latency real-time speech processing, persistent learner memory, and dynamic language-learning exercise retrieval into an intuitive, accessible voice experience.
+**DeutschMate** is a real-time multilingual AI voice tutor designed to help learners practice German through natural, interactive voice conversations. Built for the **VoiceForBharat** challenge (*10 Days of Voice Agents*), DeutschMate combines low-latency real-time speech processing, persistent learner memory, dynamic language-learning exercise retrieval, human teacher escalation, PostgreSQL call analytics, and specialist agent handoff into an intuitive, accessible voice experience.
 
 Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, and voice-first.
+
 ---
 
 ## 🌟 Key Features
@@ -32,6 +33,26 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
 - **Real-Time Visual Agent States**: Clear state indication across 5 phases: `Ready`, `Connecting`, `Listening`, `Speaking`, and `Call Ended`.
 - **User Experience**: Smooth visualizer animations, intuitive microphone permission handling, one-click reconnection, and Google Sign-In identity integration.
 
+### 6. 📞 Outbound German Practice Calls (Day 6)
+- **SIP Outbound Calling**: DeutschMate initiates outbound calls to a learner's Linphone SIP softphone for daily practice sessions.
+- **Transparent Agent Greeting**: Agent speaks first upon pickup, clearly identifying itself and the call purpose, allowing the learner to disconnect anytime.
+- **Unified Identity**: Learner identity (`sub` ID) passed via dispatch metadata so the outbound session loads the exact same PostgreSQL memory profile.
+
+### 7. 🆘 Human Teacher Escalation (Day 7)
+- **Distress & Request Recognition**: Automatically detects learner distress/anxiety or explicit requests for human teacher assistance.
+- **Pre-Call Consent Flow**: Acknowledges feelings in the learner's spoken language, explains what will be shared, and explicitly asks permission before generating an escalation request.
+- **Secure Email Summaries**: Creates a sanitized request summary with a unique reference ID (e.g. `DM-2026-XXXXXX`), emails a human teacher via SMTP, records the entry in PostgreSQL, and provides honest next steps (or an honest fallback if delivery fails).
+
+### 8. 📊 Call Analytics & Dashboard (Day 8)
+- **Exercise-Based Success Metric**: Defines a successful DeutschMate session as one where the learner successfully completes a German practice exercise (`mark_exercise_complete`).
+- **PostgreSQL Persistence**: Automatically records call outcomes (`success` or `failed`) per session in `call_analytics` table upon room teardown.
+- **Localhost Dashboard**: Lightweight HTTP dashboard running on **`http://localhost:8888`** showing Total Calls, Successful Calls, Failed Calls, and Success Rate (%) using real call data without exposing transcripts or private learner information.
+
+### 9. 👔 German Job Interview Coach Specialist & Handoff (Day 9)
+- **Dedicated Specialist Agent**: Introduces `GermanJobInterviewCoach`, a separate agent class focused exclusively on mock German job interviews, corrections, and interview feedback.
+- **Distinct Murf TTS Voices**: Main DeutschMate agent uses Murf voice **`Pooja`** (female); Specialist agent uses Murf voice **`Samar`** (male).
+- **Context-Aware Handoff**: Main agent recognizes interview practice requests, announces the transition (*"Absolutely. I'll connect you with our German Job Interview Coach."*), extracts target role/date details, and hands off the session using LiveKit's native agent update mechanism (`handoff_to_job_interview_coach`). The specialist receives full conversation history and opens directly with a tailored interview question without asking the learner to repeat details.
+
 ---
 
 ## 🏗️ Architecture
@@ -41,7 +62,7 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
                                     |    Learner (User)     |
                                     +-----------+-----------+
                                                 |
-                                        (Audio / WebRTC)
+                                        (Audio / WebRTC / SIP)
                                                 v
                                   +---------------------------+
                                   |   DeutschMate Frontend    |
@@ -55,10 +76,22 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
                                     +-----------+-----------+
                                                 |
                                                 v
-                               +---------------------------------+
-                               |   Python Voice Agent Engine     |
-                               | (src/agent.py + src/memory.py)  |
-                               +----------------+----------------+
+                                +---------------------------------+
+                                |   Python Voice Agent Engine     |
+                                |       (src/agent.py)            |
+                                +---------------+-----------------+
+                                                |
+              +---------------------------------+---------------------------------+
+              |                                                                   |
+              v                                                                   v
+  +-----------------------+                                           +-----------------------+
+  |   Main Agent          |                                           | Specialist Agent      |
+  |  (DeutschMate)        |=====[ handoff_to_job_interview_coach ]===>| (German Job Interview |
+  |  Voice: Pooja         |                                           |  Coach)               |
+  |  General Practice     |                                           |  Voice: Samar         |
+  +-----------+-----------+                                           +-----------+-----------+
+              |                                                                   |
+              +---------------------------------+---------------------------------+
                                                 |
         +-------------------+-------------------+-------------------+-------------------+
         |                   |                   |                   |                   |
@@ -66,58 +99,26 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
 +---------------+   +---------------+   +---------------+   +---------------+   +---------------+
 | Deepgram      |   | Google Gemini |   | Murf Falcon   |   | PostgreSQL    |   | German        |
 | Nova-3        |   | 3.5 Flash-Lite|   | TTS           |   | Database      |   | Practice Tool |
-| (Speech-to-   |   | (Language &   |   | (Voice        |   | (Learner      |   | (Learning     |
-| Text)         |   | Reasoning)    |   | Synthesis)    |   | Memory)       |   | Data Engine)  |
-+---------------+   +---------------+   +---------------+   +---------------+   +-------+-------+
-                                                                                        |
-                                                                        +---------------+---------------+
-                                                                        |                               |
-                                                                        v                               v
-                                                              +-------------------+           +-------------------+
-                                                              | External German   |           | Local JSON        |
-                                                              | Learning API      |  (fail)   | Fallback Dataset  |
-                                                              | (onrender.com)    +---------->| (75 Curated       |
-                                                              | (Primary)         |           | Exercises)        |
-                                                              +-------------------+           +-------------------+
+| (Speech-to-   |   | (Language &   |   | (Pooja/Samar) |   | (Memory,      |   | (Learning     |
+| Text)         |   | Reasoning)    |   |               |   | Escalations,  |   | Data Engine)  |
+|               |   |               |   |               |   | Analytics)    |   |               |
++---------------+   +---------------+   +---------------+   +-------+-------+   +-------+-------+
+                                                                        |                   |
+                                                                        v                   v
+                                                                +---------------+   +---------------+
+                                                                | Dashboard     |   | External API  |
+                                                                | Server        |   | / Fallback    |
+                                                                | (port 8888)   |   | Exercises     |
+                                                                +---------------+   +---------------+
 ```
 
 ### Typical Interaction Flow
 1. **Connection & Identity**: The learner signs in via Google OAuth. The Next.js frontend passes the authenticated `sub` ID as metadata over LiveKit.
 2. **Memory Ingestion**: The agent queries PostgreSQL for existing learner records (level, mistakes, topics) and injects this context into the active session.
 3. **Voice Processing**: User audio is streamed via WebRTC to LiveKit, converted to text via Deepgram Nova-3, and processed by Google Gemini 3.5 Flash-Lite.
-4. **Tool Execution**: When an exercise is requested, `get_german_practice()` calls the external API (or local JSON fallback if offline) and presents the question.
-5. **Speech Response**: The response text is synthesized into natural audio using Murf Falcon TTS (Voice: *Anisha*) and streamed back to the learner.
-
----
-
-## 🔄 Exercise Retrieval Fallback Logic
-
-```
- Learner requests practice exercise
-                │
-                ▼
-      get_german_practice()
-                │
-                ▼
-   Attempt External German API
- (https://german-language.onrender.com)
-                │
-        ┌───────┴───────┐
-        │               │
-  [ API Success ]  [ API Fail / Timeout ]
-        │               │
-        ▼               ▼
-  Return API      Read Hand-Curated
-   Exercise        Local JSON File
-                        │
-                ┌───────┴───────┐
-                │               │
-          [ JSON Success ]  [ Read Error ]
-                │               │
-                ▼               ▼
-          Return Local    Return Graceful
-            Exercise       Error Message
-```
+4. **General Practice / Tool Execution**: When an exercise is requested, `get_german_practice()` calls the external API (or local JSON fallback if offline) and presents the question.
+5. **Specialist Handoff**: If the user requests job interview practice, the main agent announces the switch and invokes `handoff_to_job_interview_coach`. The session transitions to `GermanJobInterviewCoach` using Murf voice **Samar**, preserving conversation history and target job role details.
+6. **Analytics Recording**: Upon session completion, the agent automatically logs the call outcome (`success` if an exercise was completed, `failed` otherwise) in `call_analytics`.
 
 ---
 
@@ -126,13 +127,14 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
 | Component | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS | Liquid-glass user interface & auth flow |
-| **Backend Agent** | Python 3.10+, `livekit-agents` SDK | Async agent orchestration & tool calls |
-| **Transport** | LiveKit WebRTC Server | Sub-second real-time audio streaming |
+| **Backend Agent** | Python 3.10+, `livekit-agents` SDK | Async agent orchestration, multi-agent handoff & tool calls |
+| **Transport** | LiveKit WebRTC Server & LiveKit SIP Trunk | Sub-second real-time audio streaming & SIP outbound calls |
 | **Speech-to-Text (STT)** | Deepgram Nova-3 | Multilingual speech transcription |
-| **Language Model (LLM)** | Google Gemini 3.5 Flash-Lite | Context reasoning, tutoring logic & tool execution |
-| **Text-to-Speech (TTS)** | Murf Falcon (`Anisha` voice profile) | Ultra-low latency voice synthesis |
-| **Database** | PostgreSQL | Persistent learner memory and profile storage |
-| **Authentication** | Google OAuth 2.0 (NextAuth.js) | Stable user identity management |
+| **Language Model (LLM)** | Google Gemini 3.5 Flash-Lite | Context reasoning, tutoring logic, escalation & tool execution |
+| **Text-to-Speech (TTS)** | Murf Falcon (`Pooja` main, `Samar` specialist) | Ultra-low latency voice synthesis with distinct agent voices |
+| **Database** | PostgreSQL (`asyncpg`) | Persistent learner memory, escalation records & call analytics |
+| **Analytics Dashboard** | Python HTTP Server (`src/dashboard.py`) | Real-time analytics dashboard on `http://localhost:8888` |
+| **Authentication** | Google OAuth 2.0 (NextAuth.js) | Stable user identity management via `sub` ID |
 | **External API** | German Language Learning API | Online exercises, grammar rules, & vocabulary |
 | **Fallback Data** | Curated JSON (`german_exercises.json`) | Reliable offline exercise dataset (75 exercises) |
 | **Package Managers** | `uv` (Python), `pnpm` (Node.js) | High-performance dependency management |
@@ -147,6 +149,10 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
 - [x] **Day 4 — Giving DeutschMate Memory**: Integrated PostgreSQL and Google OAuth to establish stable `sub`-based learner profiles, supporting consent-gated memory storage across sessions.
 - [x] **Day 5 — Giving DeutschMate Access to Learning Data**: Built the `get_german_practice()` tool with primary external API fetching, level/topic matching, and an expanded 75-exercise local JSON fallback engine.
 - [x] **Day 6 — Outbound Calling (Learning & Literacy Track)**: Added Daily German Practice Call capability. DeutschMate calls the learner's Linphone SIP address, speaks first with a transparent introduction, then conducts a full German practice session using the complete Day 4/5 pipeline.
+- [x] **Day 7 — Human Teacher Escalation**: Added human-help escalation capability (`create_escalation` tool). Recognizes learner distress/requests, requests permission before sharing info, generates unique reference IDs (e.g. `DM-2026-XXXXXX`), emails summary to human teacher, stores entry in PostgreSQL, and provides honest next steps.
+- [x] **Day 8 — Call Analytics**: Added PostgreSQL-backed call analytics (`call_analytics` table). Defines a successful call as successfully completing a German exercise. Tracks outcomes (`success`/`failed`), and provides a localhost dashboard on `http://localhost:8888` showing Total Calls, Successful Calls, Failed Calls, and Success Rate using real call data.
+- [x] **Day 9 — German Job Interview Coach Specialist Agent**: Created a dedicated specialist agent (`GermanJobInterviewCoach`) with Murf voice **Samar**. Main agent (voice **Pooja**) detects interview requests, announces handoff, extracts target role/date, and transfers session with full conversation history preserved.
+- [ ] **Day 10 — Final Polish & Submission**: Video demonstration, final optimization, and project submission.
 
 ---
 
@@ -188,85 +194,91 @@ Powered by Murf Falcon, the fastest TTS API, the experience is smooth, natural, 
 ### Learner Identity
 The outbound call passes the learner's authenticated **Google `sub` ID** as `learner_id` inside the dispatch metadata JSON. The agent's `_get_learner_id()` reads this from `ctx.job.metadata` (highest-priority path), so the **same PostgreSQL memory** is loaded as in a normal web session. No UUID is generated, no phone number is used as identity.
 
-### Setup Requirements
+---
 
-#### 1. Linphone Account
-- Download Linphone: [linphone.org](https://www.linphone.org/)
-- Create a free SIP account on `sip.linphone.org`
-- Your SIP address will be: `sip:yourusername@sip.linphone.org`
-- Keep Linphone open and registered before triggering the call
+## 🆘 Day 7 — Human Teacher Escalation
 
-#### 2. LiveKit SIP Outbound Trunk
-- Log in to [LiveKit Cloud](https://cloud.livekit.io/)
-- Navigate to **SIP → Outbound Trunks → Create Trunk**
-- Configure with your SIP provider credentials (for Linphone testing: `sip.linphone.org`, your Linphone username/password)
-- Copy the generated **Trunk ID** (format: `ST_xxxxxxxxxxxx`)
+> **VoiceForBharat Challenge — Support & Escalation**
 
-#### 3. Environment Variable
-Add to `backend/.env.local`:
-```env
-SIP_OUTBOUND_TRUNK_ID=ST_your_trunk_id_here
-```
+DeutschMate can recognize when a learner requires assistance from a human teacher and safely escalates requests while respecting learner privacy.
 
-### Triggering an Outbound Call
+### Escalation Triggers
+1. **Learner Distress / Anxiety**: Expressing significant frustration or feeling overwhelmed (e.g., *"I'm very anxious"*, *"Mujhe samajh nahi aa raha hai"*).
+2. **Explicit Request for Human Help**: Explicitly requesting a human teacher or grading assistance (e.g., *"Can I talk to a teacher?"*, *"I want a human to review my essay"*).
 
-```powershell
-# Ensure the agent is running first (in a separate terminal):
-cd backend
-uv run python src/agent.py dev
-
-# Then trigger the outbound call:
-cd backend
-uv run python src/outbound_call.py \
-    --sip-uri "sip:yourusername@sip.linphone.org" \
-    --learner-id "your_google_sub_id_here"
-```
-
-> **Finding your Google `sub` ID**: It is logged in the agent terminal when you sign in via the web UI. Look for lines like `[DIAGNOSTIC] Authenticated learner_id from room metadata: 1234567890`.
-
-### Call States & Error Handling
-
-| SIP Status | Meaning | Agent Behaviour |
-|:---|:---|:---|
-| **2xx (Answered)** | Learner picked up | Agent speaks first with transparent intro |
-| **486 / 600** | Busy | Logged and session ends cleanly |
-| **408 / 480 / 487** | No answer / Timeout | Logged and session ends cleanly |
-| **404 / 410** | SIP URI not found | Check Linphone registration |
-| **603** | Declined | Logged and session ends cleanly |
-| **Voicemail detected** | Automated system | Agent calls `end_call` immediately |
+### Consent Flow & Privacy
+- **Pre-Call Consent**: The agent acknowledges feelings, explains what summary will be shared, and explicitly asks permission before creating an escalation.
+- **Reference ID**: Generates a tracking ID format `DM-2026-XXXXXX`.
+- **Sanitized Email Delivery**: Strips raw transcripts, credentials, or passwords, sending a concise summary to the configured teacher email via SMTP.
+- **Honest Feedback**: Informs the learner of their reference ID and next steps, or provides an honest fallback if email delivery fails.
 
 ---
 
-## 📊 Day 5 Data Source Disclosure
+## 📊 Day 8 — Call Analytics & Dashboard
 
-In compliance with challenge transparency requirements, DeutschMate utilizes a multi-tiered data retrieval strategy for German language exercises:
+> **VoiceForBharat Challenge — Call Analytics**
 
-1. **Primary Source — External API**:
-   - **Service**: [German Language Learning API](https://german-language.onrender.com)
-   - **Capabilities**: Dynamically queries vocabulary (`/vocab`), grammar rules (`/grammar`), and sentence translations (`/sentences/random`).
-   - **Security**: Authenticated via `GERMAN_API_KEY` header.
+DeutschMate tracks call performance and learning outcome metrics using PostgreSQL analytics storage and a local dashboard.
 
-2. **Fallback Source — Local Curated Dataset**:
-   - **Path**: `backend/data/german_exercises.json`
-   - **Details**: A hand-curated dataset containing **75 exercises** categorized by CEFR levels (**30 A1, 20 A2, 15 B1, 10 B2**) covering 15 diverse topics (travel, work, grammar, daily life, directions, etc.).
-   - **Usage**: Automatically engaged if the external API is unreachable, rate-limited, or returns a network error, ensuring uninterrupted learning sessions without extra LLM overhead.
+### Definition of Success
+- **Successful Call**: A session where the learner successfully completes at least one German practice exercise (`mark_exercise_complete`).
+- **Failed Call**: A session where the learner disconnects without completing an exercise.
+
+### Dashboard Server
+- **URL**: **`http://localhost:8888`**
+- **Command**: `uv run python src/dashboard.py`
+- **Metrics Displayed**: Total Calls, Successful Calls, Failed Calls, Success Rate (%), and Recent Call History.
+- **Data Privacy**: Built strictly on PostgreSQL metadata rows without logging transcript text or audio.
+
+---
+
+## 👔 Day 9 — German Job Interview Coach Specialist & Agent Handoff
+
+> **VoiceForBharat Challenge — Specialized Agents & Agent Handoff**
+
+DeutschMate includes a dedicated specialist agent for German job interview preparation, featuring multi-agent orchestration and dynamic voice switching.
+
+### Specialist Agent (`GermanJobInterviewCoach`)
+- **Role**: Helps learners prepare for German-language job interviews, conducts realistic mock interviews, asks targeted questions, corrects German grammar/vocabulary mistakes, and gives constructive interview feedback.
+- **Murf Voice**: **`Samar`** (Indian English, male).
+
+### Main Agent (`Assistant`)
+- **Role**: Handles general German tutoring, exercises, learner memory, escalation, and outbound calls.
+- **Murf Voice**: **`Pooja`** (Indian English, female).
+
+### Handoff Flow
+1. Learner requests interview practice (e.g., *"I have an interview next Tuesday for a software engineer position in Germany."*).
+2. Main Agent recognizes the interview request, identifies the target role (*software engineer*) and date (*next Tuesday*), and announces:
+   *"Absolutely. I'll connect you with our German Job Interview Coach."*
+3. Main Agent invokes `handoff_to_job_interview_coach` tool.
+4. Active session updates to `GermanJobInterviewCoach` via LiveKit's `context.session.update_agent()`.
+5. Murf voice switches seamlessly from **Pooja** to **Samar**.
+6. Specialist receives prior conversation history (`chat_ctx`) and target role details, opening directly with a tailored interview question (*"Hi! I'm your German Job Interview Coach. Since you're preparing for a software engineering interview next Tuesday, let's begin with a typical opening question: Erzählen Sie mir bitte etwas über sich."*) without asking the learner to repeat details.
 
 ---
 
 ## 📁 Project Structure
 
 ```
-murf-voice-agent/
+murf-livekit-starter/
 ├── backend/                        # Python Voice Agent Application
 │   ├── data/
 │   │   └── german_exercises.json   # Hand-curated local fallback dataset (75 exercises)
 │   ├── src/
-│   │   ├── agent.py                # Main agent logic, system prompt & tool handlers
+│   │   ├── agent.py                # Main agent (Assistant), Specialist (GermanJobInterviewCoach) & handoff tools
+│   │   ├── analytics.py            # Call analytics recorder (record_call)
+│   │   ├── dashboard.py            # Analytics dashboard server (http://localhost:8888)
 │   │   ├── memory.py               # Learner memory module & PostgreSQL CRUD operations
 │   │   ├── db.py                   # PostgreSQL connection pool manager
-│   │   └── migrate.py              # Database schema migration script
+│   │   ├── escalation.py           # Human teacher escalation module & SMTP mailer
+│   │   ├── migrate.py              # Database schema migration script
+│   │   └── outbound_call.py        # Outbound SIP call dispatch script
 │   ├── tests/
-│   │   └── test_practice.py        # Integration tests for external API & fallback logic
+│   │   ├── test_agent.py           # LLM-judged eval suite (greetings, grounding, safety refusal)
+│   │   ├── test_analytics.py       # Call analytics recorder unit tests
+│   │   ├── test_day9_handoff.py    # Specialist agent & handoff unit tests
+│   │   ├── test_escalation.py      # Human escalation unit tests
+│   │   └── test_practice.py        # Practice exercise API & fallback integration tests
 │   ├── .env.example                # Backend environment variable template
 │   ├── pyproject.toml              # Python project configuration (uv)
 │   └── Dockerfile                  # Container deployment configuration
@@ -282,7 +294,7 @@ murf-voice-agent/
 │   └── package.json                # Node.js dependencies (pnpm)
 ├── start_app.ps1                   # Windows startup script
 ├── start_app.sh                    # Linux/macOS startup script
-└── README.md                       # Project documentation
+└── README.md                       # Main project documentation
 ```
 
 ---
@@ -310,11 +322,21 @@ MURF_API_KEY=your_murf_api_key
 DEEPGRAM_API_KEY=your_deepgram_api_key
 GOOGLE_API_KEY=your_google_ai_studio_key
 
-# PostgreSQL Memory Store
+# PostgreSQL Store (Memory, Escalation & Analytics)
 DATABASE_URL=postgresql://postgres:password@localhost:5432/deutschmate
 
 # German Learning API Key
 GERMAN_API_KEY=demo-key-12345
+
+# Optional: Outbound SIP Trunk ID (Day 6)
+SIP_OUTBOUND_TRUNK_ID=ST_your_trunk_id_here
+
+# Optional: Human Escalation SMTP Config (Day 7)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+TEACHER_EMAIL=teacher@example.com
 ```
 
 ### Frontend (`frontend/.env.local`)
@@ -341,7 +363,7 @@ AUTH_SECRET=your_generated_32_byte_secret
 - **uv**: Fast Python package manager (`pip install uv` or `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`)
 - **Node.js**: v18+ & **pnpm**: (`npm install -g pnpm`)
 - **PostgreSQL**: Local server or cloud instance (e.g. Neon / Supabase)
-- **LiveKit Server**: Executable or LiveKit Cloud account
+- **LiveKit Server**: Local binary or LiveKit Cloud account
 
 ### Step 1: Install Dependencies
 
@@ -356,7 +378,7 @@ pnpm install
 ```
 
 ### Step 2: Initialize Database
-Ensure PostgreSQL is running, then run the database migration:
+Ensure PostgreSQL is running, then run the database migration to set up `learners`, `memory_facts`, `escalations`, and `call_analytics` tables:
 
 ```bash
 cd backend
@@ -365,13 +387,12 @@ uv run python src/migrate.py
 
 ### Step 3: Run the Application
 
-Run the following services in **three separate terminals**:
+Run the following services in separate terminals:
 
 #### Terminal 1 — LiveKit Server (Local Dev)
 ```powershell
 .\livekit-server.exe --dev
 ```
-*(Note: `livekit-server.exe` is a local development binary and is excluded from version control).*
 
 #### Terminal 2 — Backend Voice Agent
 ```powershell
@@ -385,26 +406,44 @@ cd frontend
 pnpm dev
 ```
 
+#### Terminal 4 (Optional) — Analytics Dashboard (Day 8)
+```powershell
+cd backend
+uv run python src/dashboard.py
+```
+Open **`http://localhost:8888`** to view call analytics metrics.
+
 Open **http://localhost:3000** in your browser, sign in with Google, and click **Start Talking** to begin practicing German!
 
 ---
 
 ## 🧪 Testing & Verification
 
-### Automated Backend Test
-Run the test suite to verify the German practice tool, external API connectivity, and local JSON fallback:
+### Automated Backend Test Suite
+Run the full unit and integration test suite (14 tests):
 
 ```bash
 cd backend
-uv run python tests/test_practice.py
+uv run pytest
 ```
+
+The test suite covers:
+- `test_agent.py`: Greetings, grounding, and harmful request safety refusals.
+- `test_analytics.py`: `call_analytics` database insertion and query logic.
+- `test_day9_handoff.py`: Specialist agent initialization, Samar TTS voice, handoff tool registration, and context preservation.
+- `test_escalation.py`: Human teacher escalation triggers, consent checks, and reference ID generation.
+- `test_practice.py`: External German API integration and local exercise fallback logic.
 
 ### Manual Verification Checklist
 - [x] **Google Authentication**: Sign in and verify your Google profile email/picture appear in the UI.
-- [x] **Voice Pipeline**: Connect to the agent and confirm audio response playback via Murf Falcon.
+- [x] **Voice Pipeline**: Connect to the agent and confirm audio response playback via Murf Falcon (`Pooja`).
 - [x] **Multilingual Code-Switching**: Speak in Hindi/Hinglish to verify Devanagari Hindi responses, and speak in German to verify correct diacritic usage (`ä`, `ö`, `ü`, `ß`).
 - [x] **Practice Tool Execution**: Ask *"Give me a German exercise"* and confirm `get_german_practice()` fetches a question without revealing the answer upfront.
 - [x] **Memory Persistence**: Ask the agent to save your level (e.g., *"Set my German level to A2"*), end the call, sign in again, and verify the agent recalls your level.
+- [x] **Outbound SIP Call (Day 6)**: Trigger an outbound call via `outbound_call.py` to a Linphone address and verify transparent greeting.
+- [x] **Human Escalation (Day 7)**: Say *"I'm feeling very overwhelmed, can I talk to a teacher?"*, grant permission, and verify reference ID (`DM-2026-XXXXXX`).
+- [x] **Call Analytics (Day 8)**: Complete an exercise, hang up, open `http://localhost:8888`, and verify call outcome recorded as `success`.
+- [x] **Job Interview Specialist Handoff (Day 9)**: Say *"I have an interview next Tuesday for a software engineer position in Germany"*, verify Main Agent announcement, voice switch to **Samar**, and opening mock interview question.
 
 ---
 
